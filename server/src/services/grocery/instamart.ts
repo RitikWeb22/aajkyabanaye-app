@@ -18,9 +18,13 @@ export class InstamartGroceryProvider implements GroceryProvider {
     return true;
   }
 
-  async prepare(items: GroceryItem[], meta?: PrepareShoppingMeta): Promise<PrepareShoppingResult> {
+  async prepare(
+    items: GroceryItem[],
+    meta?: PrepareShoppingMeta,
+    userToken?: string
+  ): Promise<PrepareShoppingResult> {
     const formattedText = (await this.fallbackProvider.prepare(items, meta)).text;
-    const isConnected = swiggyMcp.isConnected();
+    const isConnected = Boolean(userToken || swiggyMcp.isConnected());
 
     const matchedItems: Array<{
       name: string;
@@ -36,7 +40,7 @@ export class InstamartGroceryProvider implements GroceryProvider {
     let defaultAddress: { id: string; addressLine?: string; tag?: string; area?: string; name?: string } | null = null;
     if (isConnected) {
       try {
-        defaultAddress = await swiggyMcp.getDefaultAddress();
+        defaultAddress = await swiggyMcp.getDefaultAddress(userToken);
       } catch (e) {
         console.warn('Could not resolve default address:', e);
       }
@@ -44,7 +48,7 @@ export class InstamartGroceryProvider implements GroceryProvider {
 
     const targetAddressId = defaultAddress?.id;
 
-    // 1. Process all selected items
+    // 1. Process all selected items with live darkstore query
     const searchPromises = items.map(async (it) => {
       const query = it.groceryTerm || it.name;
       const searchUrl = `https://www.swiggy.com/instamart/search?custom_back=true&query=${encodeURIComponent(query)}`;
@@ -52,12 +56,13 @@ export class InstamartGroceryProvider implements GroceryProvider {
 
       if (isConnected && targetAddressId) {
         try {
-          const found = await swiggyMcp.searchProducts(query, targetAddressId);
+          const found = await swiggyMcp.searchProducts(query, targetAddressId, userToken);
           if (found && found.length > 0) {
             matchedProduct = found[0];
-            if (matchedProduct.spinId) {
+            // Only verified items with non-empty genuine spinIds are eligible for cart
+            if (matchedProduct.spinId && matchedProduct.spinId !== 'spin_default' && matchedProduct.spinId !== 'item') {
               const buyQty = typeof it.packQuantity === 'number' && it.packQuantity > 0
-                ? it.packQuantity
+                ? Math.round(it.packQuantity)
                 : 1;
               cartItems.push({
                 spinId: matchedProduct.spinId,
@@ -66,30 +71,22 @@ export class InstamartGroceryProvider implements GroceryProvider {
             }
           }
         } catch (err) {
-          console.warn(`Swiggy product search for "${query}" notice:`, err);
+          console.warn(`Swiggy product search for "${query}" error:`, err);
         }
       }
 
-      if (!matchedProduct) {
+      // If development mock mode is enabled explicitly and not connected or failed
+      if (!matchedProduct && process.env.NODE_ENV !== 'production' && process.env.ENABLE_MOCK_GROCERY === 'true') {
         const cleanName = it.name;
-        let estPrice = 45;
-        const lower = cleanName.toLowerCase();
-        if (lower.includes('paneer')) estPrice = 95;
-        else if (lower.includes('butter') || lower.includes('ghee')) estPrice = 58;
-        else if (lower.includes('tomato') || lower.includes('onion') || lower.includes('potato')) estPrice = 32;
-        else if (lower.includes('chicken') || lower.includes('mutton') || lower.includes('meat')) estPrice = 180;
-        else if (lower.includes('masala') || lower.includes('spice')) estPrice = 42;
-        else if (lower.includes('milk') || lower.includes('curd') || lower.includes('dahi')) estPrice = 35;
-        else if (lower.includes('oil')) estPrice = 145;
-
         matchedProduct = {
-          id: `spin_${encodeURIComponent(cleanName.toLowerCase().replace(/\s+/g, '_'))}`,
-          name: `${cleanName} (Fresh Pack)`,
-          brand: 'Instamart Fresh',
-          price: estPrice,
-          mrp: Math.round(estPrice * 1.2),
+          id: `mock_${encodeURIComponent(cleanName.toLowerCase().replace(/\s+/g, '_'))}`,
+          name: `${cleanName} (Simulated Preview)`,
+          brand: 'Simulated Darkstore (Dev Only)',
+          price: 45,
+          mrp: 55,
           weight: it.quantity && it.unit ? `${it.quantity} ${it.unit}` : '1 Pack',
           inStock: true,
+          isMock: true,
         };
       }
 
@@ -100,7 +97,7 @@ export class InstamartGroceryProvider implements GroceryProvider {
         unit: it.unit,
         groceryTerm: query,
         searchUrl,
-        product: matchedProduct,
+        product: matchedProduct || undefined,
       };
     });
 
@@ -111,23 +108,34 @@ export class InstamartGroceryProvider implements GroceryProvider {
       }
     }
 
-    // 2. If user is connected and has cart items, push all items into Swiggy cart
+    // 2. If user is connected and has valid cart items, attempt official Swiggy cart update
     let swiggyCartDetails: any = null;
+    let cartUpdateError: string | null = null;
+
     if (isConnected && cartItems.length > 0 && targetAddressId) {
       try {
-        swiggyCartDetails = await swiggyMcp.updateCart(cartItems, targetAddressId);
-      } catch (err) {
+        const updateRes = await swiggyMcp.updateCart(cartItems, targetAddressId, userToken);
+        if (updateRes.success) {
+          swiggyCartDetails = updateRes;
+        } else {
+          cartUpdateError = updateRes.error || 'Cart update failed on Swiggy Instamart';
+          console.warn('Swiggy Instamart update_cart notice:', cartUpdateError);
+        }
+      } catch (err: any) {
+        cartUpdateError = err?.message || 'Swiggy MCP direct cart update error';
         console.warn('Swiggy MCP direct cart creation notice:', err);
       }
     }
 
-    const itemTotal = matchedItems.reduce((sum, item: any) => sum + ((item.product?.price || 40) * (item.packQuantity || 1)), 0);
-    const totalMrp = matchedItems.reduce((sum, item: any) => sum + ((item.product?.mrp || item.product?.price || 40) * (item.packQuantity || 1)), 0);
+    // Calculate totals based strictly on genuine matched products
+    const itemsWithPrice = matchedItems.filter((i) => i.product && typeof i.product.price === 'number');
+    const itemTotal = itemsWithPrice.reduce((sum, item: any) => sum + (item.product.price * (item.packQuantity || 1)), 0);
+    const totalMrp = itemsWithPrice.reduce((sum, item: any) => sum + ((item.product.mrp || item.product.price) * (item.packQuantity || 1)), 0);
     const savings = Math.max(0, totalMrp - itemTotal);
 
-    const deliveryFee = itemTotal >= 199 ? 0 : 25;
-    const handlingFee = 10;
-    let grandTotal = itemTotal + (deliveryFee === 0 ? 0 : deliveryFee);
+    const deliveryFee = itemTotal >= 199 || itemTotal === 0 ? 0 : 25;
+    const handlingFee = itemTotal > 0 ? 10 : 0;
+    let grandTotal = itemTotal + (deliveryFee === 0 ? 0 : deliveryFee) + handlingFee;
 
     if (swiggyCartDetails?.cartTotalAmount) {
       const parsedTotal = parseInt(String(swiggyCartDetails.cartTotalAmount).replace(/[^0-9]/g, ''), 10);
@@ -148,7 +156,8 @@ export class InstamartGroceryProvider implements GroceryProvider {
       billBreakdown: swiggyCartDetails?.billBreakdown,
     };
 
-    if (isConnected && cartItems.length > 0) {
+    // 3. P0 FIX: Only return type: 'cart_created' when Swiggy API genuinely created/updated the cart!
+    if (isConnected && swiggyCartDetails && swiggyCartDetails.cartId) {
       return {
         provider: this.id,
         type: 'cart_created',
@@ -158,21 +167,27 @@ export class InstamartGroceryProvider implements GroceryProvider {
         isConnected: true,
         items: matchedItems,
         cartSummary,
-        message: `🛒 All ${cartItems.length} ingredients matched with live Instamart darkstore pricing.`,
+        message: `🛒 ${cartItems.length} ingredients successfully added to your Swiggy Instamart cart.`,
       };
     }
 
-    // 3. Return full multi-item collection and cart summary
+    // 4. Honest fallback when cart could not be created or user is not connected
+    const fallbackMessage = cartUpdateError
+      ? `Could not auto-add to cart (${cartUpdateError}). You can open the items directly on Swiggy Instamart.`
+      : isConnected
+      ? `Items matched with Swiggy Instamart. Tap an item to search and add to your order.`
+      : `Connect your Swiggy account for 1-tap cart creation, or use the direct search links below.`;
+
     return {
       provider: this.id,
-      type: 'cart_created',
+      type: 'deeplink',
       url: 'https://www.swiggy.com/instamart',
       text: formattedText,
       itemCount: items.length,
       isConnected,
       items: matchedItems,
-      cartSummary,
-      message: `🛒 ${items.length} ingredients matched with live Instamart darkstore pricing.`,
+      cartSummary: itemTotal > 0 ? cartSummary : undefined,
+      message: fallbackMessage,
     };
   }
 }

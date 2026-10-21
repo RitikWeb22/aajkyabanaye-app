@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { groceryRegistry } from '../services/grocery/registry.js';
-import { swiggyMcp } from '../services/grocery/swiggyMcpClient.js';
+import { swiggyMcp, SwiggyAuthError, SwiggyAddressError } from '../services/grocery/swiggyMcpClient.js';
+import { optionalAuth, requireAuth } from '../middleware/auth.js';
 
 export const shoppingRouter = Router();
 
@@ -28,9 +29,9 @@ const prepareShoppingSchema = z.object({
 /**
  * POST /shopping/prepare
  * Prepares selected ingredients for shopping or copy/share workflow.
- * Public or authenticated endpoint.
+ * Uses authenticated user session to retrieve user-scoped Swiggy token if connected.
  */
-shoppingRouter.post('/shopping/prepare', async (req: Request, res: Response) => {
+shoppingRouter.post('/shopping/prepare', optionalAuth, async (req: Request, res: Response) => {
   try {
     const parseResult = prepareShoppingSchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -68,7 +69,9 @@ shoppingRouter.post('/shopping/prepare', async (req: Request, res: Response) => 
         }
       : undefined;
 
-    const result = await provider.prepare(sanitizedItems, sanitizedMeta);
+    // Get user-scoped token if user is authenticated
+    const userToken = await swiggyMcp.getUserToken(req.userId);
+    const result = await (provider as any).prepare(sanitizedItems, sanitizedMeta, userToken || undefined);
 
     return res.json({
       success: true,
@@ -87,12 +90,12 @@ shoppingRouter.post('/shopping/prepare', async (req: Request, res: Response) => 
 
 /**
  * GET /shopping/providers
- * Returns available grocery shopping providers and their readiness status.
+ * Returns available grocery shopping providers and user-scoped readiness status.
  */
-shoppingRouter.get('/shopping/providers', (_req: Request, res: Response) => {
+shoppingRouter.get('/shopping/providers', optionalAuth, async (req: Request, res: Response) => {
   const copyList = groceryRegistry.get('copy_list');
   const instamart = groceryRegistry.get('instamart');
-  const isSwiggyConnected = swiggyMcp.isConnected();
+  const isSwiggyConnected = await swiggyMcp.isUserConnected(req.userId);
 
   return res.json({
     success: true,
@@ -118,13 +121,14 @@ shoppingRouter.get('/shopping/providers', (_req: Request, res: Response) => {
 
 /**
  * GET /shopping/swiggy/status
- * Check if Swiggy MCP is currently connected
+ * Check if current user has an active Swiggy MCP connection
  */
-shoppingRouter.get('/shopping/swiggy/status', (_req: Request, res: Response) => {
+shoppingRouter.get('/shopping/swiggy/status', optionalAuth, async (req: Request, res: Response) => {
+  const isConnected = await swiggyMcp.isUserConnected(req.userId);
   res.json({
     success: true,
     data: {
-      isConnected: swiggyMcp.isConnected(),
+      isConnected,
       provider: 'Swiggy Instamart Builders Club MCP',
       endpoint: 'https://mcp.swiggy.com/im',
     },
@@ -132,17 +136,62 @@ shoppingRouter.get('/shopping/swiggy/status', (_req: Request, res: Response) => 
 });
 
 /**
- * GET /shopping/swiggy/auth-url
- * Initiate OAuth 2.1 PKCE authorization flow for Swiggy MCP
+ * GET /shopping/swiggy/addresses
+ * Retrieves saved delivery addresses for current user.
+ * Explicitly separates authentication failures from empty address lists.
  */
-shoppingRouter.get('/shopping/swiggy/auth-url', (req: Request, res: Response) => {
-  // Mobile browsers cannot resolve localhost:5000. Use Cloudflare HTTPS tunnel or custom URI.
-  const defaultCallback = process.env.SWIGGY_REDIRECT_URI || 'https://macintosh-respond-ideal-number.trycloudflare.com/shopping/swiggy/callback';
+shoppingRouter.get('/shopping/swiggy/addresses', optionalAuth, async (req: Request, res: Response) => {
+  try {
+    const userToken = await swiggyMcp.getUserToken(req.userId);
+    if (!userToken) {
+      return res.status(401).json({
+        error: {
+          code: 'AUTH_REQUIRED',
+          message: 'Swiggy account is not connected. Please connect your account first.',
+        },
+      });
+    }
+
+    const addresses = await swiggyMcp.getAddresses(userToken);
+    return res.json({
+      success: true,
+      data: {
+        addresses,
+        count: addresses.length,
+        hasAddresses: addresses.length > 0,
+      },
+    });
+  } catch (err: any) {
+    if (err instanceof SwiggyAuthError || err.statusCode === 401) {
+      return res.status(401).json({
+        error: {
+          code: err.code || 'AUTH_REQUIRED',
+          message: err.message,
+        },
+      });
+    }
+
+    return res.status(500).json({
+      error: {
+        code: 'SWIGGY_ADDRESS_ERROR',
+        message: err?.message || 'Failed to fetch saved delivery addresses from Swiggy Instamart.',
+      },
+    });
+  }
+});
+
+/**
+ * GET /shopping/swiggy/auth-url
+ * Initiate OAuth 2.1 PKCE authorization flow for Swiggy MCP.
+ * Persists state session in MongoDB to survive restarts and multi-instance load.
+ */
+shoppingRouter.get('/shopping/swiggy/auth-url', optionalAuth, async (req: Request, res: Response) => {
+  const defaultCallback = process.env.SWIGGY_REDIRECT_URI || 'https://aajkyabanaye-app.onrender.com/shopping/swiggy/callback';
   const customUri = req.query.redirectUri as string | undefined;
-  const redirectUri = customUri && customUri.startsWith('https://') ? customUri : defaultCallback;
+  const redirectUri = customUri && (customUri.startsWith('https://') || customUri.startsWith('aajkyabanaye://')) ? customUri : defaultCallback;
   const state = req.query.state as string | undefined;
 
-  const { authUrl, state: csrfState } = swiggyMcp.createAuthUrl(redirectUri, state);
+  const { authUrl, state: csrfState } = await swiggyMcp.createAuthUrl(redirectUri, req.userId, state);
 
   res.json({
     success: true,
@@ -156,24 +205,27 @@ shoppingRouter.get('/shopping/swiggy/auth-url', (req: Request, res: Response) =>
 
 /**
  * POST /shopping/swiggy/exchange
- * Exchanges code received via client-side AuthSession
+ * Exchanges code received via client-side AuthSession with secure state validation
  */
-shoppingRouter.post('/shopping/swiggy/exchange', async (req: Request, res: Response) => {
+shoppingRouter.post('/shopping/swiggy/exchange', optionalAuth, async (req: Request, res: Response) => {
   try {
     const { code, state } = req.body;
     if (!code) {
       return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'Missing authorization code' } });
     }
 
-    const session = swiggyMcp.getSessionForState(String(state));
-    const redirectUri = session?.redirectUri || process.env.SWIGGY_REDIRECT_URI || 'https://macintosh-respond-ideal-number.trycloudflare.com/shopping/swiggy/callback';
-    const verifier = session?.codeVerifier;
-
-    if (!verifier) {
+    // Atomically consume state session to prevent replay attacks
+    const session = await swiggyMcp.consumeSessionForState(String(state));
+    if (!session) {
       return res.status(400).json({ error: { code: 'INVALID_STATE', message: 'Invalid or expired state session' } });
     }
 
-    const tokenData = await swiggyMcp.exchangeCode(code, verifier, redirectUri);
+    const redirectUri = session.redirectUri || process.env.SWIGGY_REDIRECT_URI || 'https://aajkyabanaye-app.onrender.com/shopping/swiggy/callback';
+    const verifier = session.codeVerifier;
+
+    const boundUserId = session.clerkUserId || req.userId;
+    const tokenData = await swiggyMcp.exchangeCode(code, verifier, redirectUri, boundUserId);
+
     return res.json({
       success: true,
       data: {
@@ -191,7 +243,7 @@ shoppingRouter.post('/shopping/swiggy/exchange', async (req: Request, res: Respo
 
 /**
  * GET /shopping/swiggy/callback
- * Handles OAuth 2.1 PKCE callback from Swiggy
+ * Handles OAuth 2.1 PKCE callback from Swiggy with secure state validation
  */
 shoppingRouter.get('/shopping/swiggy/callback', async (req: Request, res: Response) => {
   try {
@@ -242,12 +294,13 @@ shoppingRouter.get('/shopping/swiggy/callback', async (req: Request, res: Respon
       `);
     }
 
-    const session = swiggyMcp.getSessionForState(String(state));
+    // Atomically consume state session
+    const session = await swiggyMcp.consumeSessionForState(String(state));
     if (!session) {
       return res.status(400).send('Invalid or expired OAuth state');
     }
 
-    const tokenData = await swiggyMcp.exchangeCode(code, session.codeVerifier, session.redirectUri);
+    await swiggyMcp.exchangeCode(code, session.codeVerifier, session.redirectUri, session.clerkUserId);
 
     res.send(`
       <html>
@@ -257,7 +310,7 @@ shoppingRouter.get('/shopping/swiggy/callback', async (req: Request, res: Respon
         </head>
         <body style="font-family: sans-serif; text-align: center; padding: 40px; background: #FFF9F0; color: #252923;">
           <h2 style="color: #245C45;">✅ Swiggy Instamart Connected!</h2>
-          <p>Your AajKyaBanaye kitchen is now connected to Swiggy Builders Club MCP.</p>
+          <p>Your AajKyaBanaye kitchen is now securely connected to Swiggy Builders Club MCP.</p>
           <p style="color: #777D76; font-size: 14px;">You can now return to the app to order groceries in 1 tap.</p>
           <script>
             setTimeout(() => {
@@ -277,14 +330,15 @@ shoppingRouter.get('/shopping/swiggy/callback', async (req: Request, res: Respon
  * POST /shopping/swiggy/search
  * Proxies live product search to Swiggy Instamart via MCP
  */
-shoppingRouter.post('/shopping/swiggy/search', async (req: Request, res: Response) => {
+shoppingRouter.post('/shopping/swiggy/search', optionalAuth, async (req: Request, res: Response) => {
   try {
     const { query, addressId } = req.body;
     if (!query) {
       return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'Query is required' } });
     }
 
-    const products = await swiggyMcp.searchProducts(query, addressId);
+    const userToken = await swiggyMcp.getUserToken(req.userId);
+    const products = await swiggyMcp.searchProducts(query, addressId, userToken || undefined);
     res.json({
       success: true,
       data: products,
@@ -298,49 +352,40 @@ shoppingRouter.post('/shopping/swiggy/search', async (req: Request, res: Respons
 
 /**
  * POST /shopping/swiggy/connect-token
- * Manually connect or update Swiggy MCP access token
+ * Manually connect or update Swiggy MCP access token for authenticated user
  */
-shoppingRouter.post('/shopping/swiggy/connect-token', (req: Request, res: Response) => {
-  const { token } = req.body;
+shoppingRouter.post('/shopping/swiggy/connect-token', requireAuth, async (req: Request, res: Response) => {
+  const { token, expiresIn } = req.body;
   if (!token || typeof token !== 'string') {
     return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'Token is required' } });
   }
-  swiggyMcp.setToken(token);
-  return res.json({
-    success: true,
-    data: {
-      isConnected: true,
-      message: 'Swiggy MCP token set successfully.',
-    },
-  });
-});
 
-/**
- * POST /shopping/swiggy/demo-connect
- * Connects a simulated/active development session for Instant 1-Tap Cart Auto-Add
- */
-shoppingRouter.post('/shopping/swiggy/demo-connect', (_req: Request, res: Response) => {
-  swiggyMcp.setToken('swiggy_demo_token_' + Date.now());
+  await swiggyMcp.setUserToken(req.userId!, {
+    access_token: token,
+    token_type: 'Bearer',
+    expires_in: typeof expiresIn === 'number' ? expiresIn : 86400 * 30,
+  });
+
   return res.json({
     success: true,
     data: {
       isConnected: true,
-      message: 'Swiggy Instamart auto-cart session activated! All ingredients will be automatically sent to cart.',
+      message: 'Swiggy MCP token saved securely for your account.',
     },
   });
 });
 
 /**
  * POST /shopping/swiggy/disconnect
- * Disconnects current Swiggy session
+ * Disconnects and revokes current user's Swiggy session
  */
-shoppingRouter.post('/shopping/swiggy/disconnect', (_req: Request, res: Response) => {
-  swiggyMcp.setToken('');
+shoppingRouter.post('/shopping/swiggy/disconnect', requireAuth, async (req: Request, res: Response) => {
+  await swiggyMcp.clearUserToken(req.userId!);
   return res.json({
     success: true,
     data: {
       isConnected: false,
-      message: 'Swiggy Instamart disconnected.',
+      message: 'Swiggy Instamart disconnected successfully.',
     },
   });
 });

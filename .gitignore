@@ -27,6 +27,10 @@ web-build/
 *.key
 *.mobileprovision
 *.orig.*
+*.apk
+*.aab
+builds/apk/
+builds/playstore/*.aab
 
 # Metro
 .metro-health-check*

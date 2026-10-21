@@ -31,6 +31,8 @@ import {
   useClearRecentlyViewed,
 } from '../../hooks/useRecipes';
 import { useFavorites, useToggleFavorite } from '../../hooks/useFavorites';
+import { useUserProfile } from '../../hooks/useUserProfile';
+import { useAppStore } from '../../store/useAppStore';
 import { Recipe } from '../../types/recipe';
 
 interface CategoryItem {
@@ -148,6 +150,10 @@ export default function HomeScreen() {
   );
   const clearRecentMutation = useClearRecentlyViewed();
 
+  // 5. User Profile & Avatar
+  const { data: userProfile } = useUserProfile();
+  const storedAvatarUrl = useAppStore((s) => s.avatarUrl);
+
   // Favorites Lookup Set
   const favoriteIds = useMemo(() => {
     return new Set(
@@ -174,7 +180,17 @@ export default function HomeScreen() {
     return trendingRecipes;
   }, [trendingRecipes]);
 
-  const displayName = user?.firstName || user?.fullName || 'Foodie';
+  const displayName =
+    user?.firstName ||
+    userProfile?.displayName ||
+    user?.fullName ||
+    'Foodie';
+
+  const effectiveAvatarUrl =
+    storedAvatarUrl ||
+    userProfile?.avatarUrl ||
+    (isSignedIn ? user?.imageUrl : undefined);
+
   const greeting = getTimeGreeting();
 
   // Favorite toggle handler with toast/alert
@@ -309,9 +325,9 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityLabel="View Profile"
             >
-              {user?.imageUrl ? (
+              {effectiveAvatarUrl ? (
                 <Image
-                  source={{ uri: user.imageUrl }}
+                  source={{ uri: effectiveAvatarUrl }}
                   style={styles.avatarImage}
                   contentFit="cover"
                 />

@@ -10,8 +10,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.aajkyabanaye.app",
+      "buildNumber": "1",
       "infoPlist": {
-        "LSApplicationQueriesSchemes": ["swiggy"]
+        "LSApplicationQueriesSchemes": [
+          "swiggy"
+        ]
       }
     },
     "android": {
@@ -19,7 +22,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#FFF9F0"
       },
-      "package": "com.aajkyabanaye.app"
+      "package": "com.aajkyabanaye.app",
+      "versionCode": 1
     },
     "androidStatusBar": {
       "barStyle": "dark-content",
@@ -47,6 +51,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "485c7c5c-b1f2-44c7-a0a6-dc92a39216e7"
+      }
+    },
+    "owner": "ritik2207"
   }
 }

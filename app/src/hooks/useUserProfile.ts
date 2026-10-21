@@ -17,7 +17,33 @@ export function useUserProfile() {
       return res.data;
     },
     enabled: Boolean(isSignedIn),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 30, // 30 seconds
+  });
+}
+
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+  const setAvatarUrl = useAppStore((s) => s.setAvatarUrl);
+
+  return useMutation({
+    mutationFn: async (profileData: {
+      displayName?: string;
+      dietaryPreferences?: string[];
+      favoriteCuisines?: string[];
+      allergies?: string[];
+      preferredCookingTimeMins?: number;
+      theme?: 'light' | 'dark' | 'system';
+      avatarUrl?: string;
+    }) => {
+      const res = await apiClient.updateProfile(profileData);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      if (data?.avatarUrl) {
+        setAvatarUrl(data.avatarUrl);
+      }
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+    },
   });
 }
 

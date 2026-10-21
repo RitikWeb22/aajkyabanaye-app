@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "485c7c5c-b1f2-44c7-a0a6-dc92a39216e7"
+      }
+    },
+    "android": {
+      "package": "com.ritik2207.aajkyabanaye"
+    }
+  }
+}

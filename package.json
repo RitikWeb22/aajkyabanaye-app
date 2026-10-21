@@ -10,6 +10,9 @@
     "app:ios": "npm --prefix app run ios",
     "app:web": "npm --prefix app run web",
     "server": "npm --prefix server run dev",
+    "build:apk": "npm --prefix app run build:apk",
+    "build:playstore": "npm --prefix app run build:playstore",
+    "build:ios": "npm --prefix app run build:ios",
     "lint": "npm --prefix app run lint && npm --prefix server run lint",
     "typecheck": "npm --prefix app run typecheck && npm --prefix server run typecheck"
   },

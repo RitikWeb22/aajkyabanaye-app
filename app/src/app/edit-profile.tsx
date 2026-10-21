@@ -21,13 +21,14 @@ import { Colors } from '../constants/theme';
 import { Input } from '../components/ui/Input';
 import { useAppStore } from '../store/useAppStore';
 import { apiClient } from '../services/api/apiClient';
-import { useUserProfile, useUploadAvatar } from '../hooks/useUserProfile';
+import { useUserProfile, useUploadAvatar, useUpdateProfile } from '../hooks/useUserProfile';
 
 export default function EditProfileScreen() {
   const router = useRouter();
   const { user, isSignedIn } = useUser();
   const { data: userProfile } = useUserProfile();
   const uploadAvatarMutation = useUploadAvatar();
+  const updateProfileMutation = useUpdateProfile();
 
   const chefBio = useAppStore((s) => s.chefBio);
   const storedPhoneNumber = useAppStore((s) => s.phoneNumber);
@@ -140,6 +141,8 @@ export default function EditProfileScreen() {
             firstName: firstName.trim() || undefined,
             lastName: lastName.trim() || undefined,
           });
+          // Force Clerk cache reload so other screens immediately see new name
+          await user.reload();
         } catch (clerkErr: any) {
           console.warn('Clerk user update notice:', clerkErr);
         }
@@ -149,14 +152,16 @@ export default function EditProfileScreen() {
       setKitchenPreferences({
         chefBio: bio.trim(),
         phoneNumber: phone.trim(),
+        avatarUrl: currentAvatarUri || undefined,
       });
 
-      // 3. Sync to MongoDB API if authenticated
+      // 3. Sync to MongoDB API via React Query mutation (invalidates cache for immediate UI sync)
       if (isSignedIn) {
         try {
           const fullName = `${firstName} ${lastName}`.trim();
-          await apiClient.updateProfile({
+          await updateProfileMutation.mutateAsync({
             displayName: fullName || 'Home Chef',
+            avatarUrl: currentAvatarUri || undefined,
           });
         } catch (apiErr: any) {
           console.warn('Backend profile sync notice:', apiErr);

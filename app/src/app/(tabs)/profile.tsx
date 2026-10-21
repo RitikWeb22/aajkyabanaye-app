@@ -156,7 +156,7 @@ export default function ProfileScreen() {
   };
 
   const displayName = isSignedIn
-    ? user?.fullName || user?.firstName || 'Chef'
+    ? userProfile?.displayName || user?.fullName || user?.firstName || 'Chef'
     : 'Guest Chef';
   const emailDisplay = isSignedIn
     ? user?.primaryEmailAddress?.emailAddress || ''
