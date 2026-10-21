@@ -275,7 +275,7 @@ export default function HomeScreen() {
         contentContainerStyle={[
           styles.scrollContent,
           isWide && styles.scrollContentWide,
-          { paddingBottom: insets.bottom + 90 },
+          { paddingBottom: insets.bottom + 120 },
         ]}
         showsVerticalScrollIndicator={false}
       >

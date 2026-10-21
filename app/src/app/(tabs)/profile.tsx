@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 18,
     paddingTop: 12,
-    paddingBottom: 40,
+    paddingBottom: 120,
     maxWidth: 480,
     width: '100%',
     alignSelf: 'center',

@@ -1222,7 +1222,7 @@ const styles = StyleSheet.create({
   mainScrollContent: {
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
 
   /* Calendar Strip */

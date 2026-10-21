@@ -574,7 +574,7 @@ export default function DiscoverScreen() {
         contentContainerStyle={[
           styles.listContent,
           isWide && styles.listContentWide,
-          { paddingBottom: insets.bottom + 90 },
+          { paddingBottom: insets.bottom + 120 },
         ]}
         showsVerticalScrollIndicator={false}
         refreshControl={

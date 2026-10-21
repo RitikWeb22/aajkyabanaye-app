@@ -395,7 +395,7 @@ export default function SearchScreen() {
                 variant="grid"
               />
             )}
-            ListFooterComponent={<View style={{ height: 32 }} />}
+            ListFooterComponent={<View style={{ height: 120 }} />}
           />
         )}
 
@@ -522,7 +522,7 @@ export default function SearchScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.mainScrollContent,
-          activeTab === 'pantry' && { paddingBottom: 110 + insets.bottom },
+          { paddingBottom: (activeTab === 'pantry' ? 150 : 120) + insets.bottom },
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
