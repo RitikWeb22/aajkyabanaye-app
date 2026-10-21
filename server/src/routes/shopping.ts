@@ -209,7 +209,37 @@ shoppingRouter.get('/shopping/swiggy/callback', async (req: Request, res: Respon
     }
 
     if (!code || typeof code !== 'string') {
-      return res.status(400).send('Missing authorization code');
+      return res.status(200).send(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <title>Swiggy OAuth Callback — AajKyaBanaye</title>
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #FFF9F0; color: #252923; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+              .card { background: #FFFFFF; max-width: 480px; width: 100%; padding: 36px 28px; border-radius: 20px; border: 1px solid #ECE8DF; box-shadow: 0 4px 20px rgba(0,0,0,0.06); text-align: center; }
+              .badge { display: inline-block; background: #DCFCE7; color: #15803D; padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; margin-bottom: 16px; border: 1px solid #86EFAC; }
+              h1 { font-size: 20px; margin: 0 0 10px; color: #245C45; }
+              p { font-size: 14px; color: #555; line-height: 1.6; margin: 0 0 20px; }
+              .info { background: #F8F6F0; border-radius: 12px; padding: 12px 16px; font-size: 12.5px; color: #666; text-align: left; }
+              .info code { color: #245C45; font-weight: 600; }
+            </style>
+          </head>
+          <body>
+            <div class="card">
+              <div class="badge">● Active & Ready</div>
+              <h1>Swiggy OAuth Callback Endpoint</h1>
+              <p>This endpoint is live and configured to receive authorization redirects from <strong>Swiggy Builders Club MCP</strong> for the AajKyaBanaye application.</p>
+              <div class="info">
+                <strong>Protocol:</strong> OAuth 2.1 PKCE (S256)<br/>
+                <strong>App Scheme:</strong> <code>aajkyabanaye://oauth/swiggy</code><br/>
+                <strong>Status:</strong> Waiting for authorization code handshake.
+              </div>
+            </div>
+          </body>
+        </html>
+      `);
     }
 
     const session = swiggyMcp.getSessionForState(String(state));
