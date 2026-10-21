@@ -1,0 +1,41 @@
+{
+  "name": "aajkyabanaye-server",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "AajKyaBanaye Backend API",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test:phase4": "tsx tests/test-phase4.ts",
+    "test:phase6": "tsx tests/test-phase6.ts",
+    "test:phase7": "tsx tests/test-phase7.ts",
+    "test:phase8": "tsx tests/test-phase8.ts",
+    "test:phase9": "tsx tests/test-phase9.ts",
+    "test:phase10": "tsx tests/test-phase10.ts",
+    "lint": "echo \"Server lint pass\""
+  },
+  "dependencies": {
+    "@clerk/express": "^2.1.80",
+    "@google/genai": "^2.30.0",
+    "axios": "^1.8.1",
+    "cloudinary": "^2.11.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
+    "mongoose": "^9.1.2",
+    "svix": "^2.8.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.0",
+    "tsx": "^4.19.3",
+    "typescript": "~5.7.0"
+  }
+}

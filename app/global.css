@@ -1,0 +1,31 @@
+/* Clean Web Resets & Enhancements for AajKyaBanaye */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #FAF7F0;
+  font-family: 'Inter_400Regular', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure buttons, links, and pressables show pointer cursor on web */
+[role="button"], button, a, [data-focusable="true"] {
+  cursor: pointer !important;
+}
+
+/* Remove default browser outlines on text inputs and apply smooth focus */
+input, textarea {
+  outline: none !important;
+}
+
+/* Highlight input container border when child input is focused */
+.web-input-container:focus-within {
+  border-color: #1E5038 !important;
+  box-shadow: 0 0 0 1px #1E5038 !important;
+}
