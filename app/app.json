@@ -2,7 +2,7 @@
   "expo": {
     "name": "AajKyaBanaye",
     "slug": "aajkyabanaye",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "aajkyabanaye",
@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.aajkyabanaye.app",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "infoPlist": {
         "LSApplicationQueriesSchemes": [
           "swiggy"
@@ -23,7 +23,7 @@
         "backgroundColor": "#FFF9F0"
       },
       "package": "com.aajkyabanaye.app",
-      "versionCode": 2
+      "versionCode": 3
     },
     "androidStatusBar": {
       "barStyle": "dark-content",
