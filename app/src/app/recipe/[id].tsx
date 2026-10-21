@@ -10,7 +10,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -48,6 +48,7 @@ import { useIsFavorite, useToggleFavorite } from '../../hooks/useFavorites';
 
 export default function RecipeDetailScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const recipeId = Array.isArray(id) ? id[0] : id;
 
@@ -328,7 +329,7 @@ export default function RecipeDetailScreen() {
   const stepProgressPercent = Math.round((completedStepCount / Math.max(1, recipe.steps.length)) * 100);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
       {/* Top Bar with Share & PDF actions */}
       <View style={styles.topBar}>
         <IconButton
@@ -690,12 +691,19 @@ export default function RecipeDetailScreen() {
           </View>
         )}
 
-        {/* Extra space for sticky bottom bar */}
-        <View style={{ height: 90 }} />
+        {/* Extra space for sticky bottom bar so content scrolls completely above it */}
+        <View style={{ height: 110 + Math.max(insets.bottom, 16) }} />
       </ScrollView>
 
       {/* Sticky Bottom Shopping Bar (Section 11) */}
-      <View style={styles.stickyBottomBar}>
+      <View
+        style={[
+          styles.stickyBottomBar,
+          {
+            paddingBottom: Math.max(insets.bottom, 14) + 12,
+          },
+        ]}
+      >
         <View style={styles.stickyInfo}>
           <Text style={styles.stickyCountText}>
             {selectedCount > 0 ? `${selectedCount} items selected` : 'No items selected'}
@@ -1132,7 +1140,8 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: Colors.background.card,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

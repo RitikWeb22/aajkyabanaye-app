@@ -181,14 +181,44 @@ shoppingRouter.get('/shopping/swiggy/addresses', optionalAuth, async (req: Reque
 });
 
 /**
+ * Resolves a safe, reachable Swiggy OAuth redirect URI.
+ * Strictly filters out dead/temporary tunnels (e.g. trycloudflare.com) and localhost in production.
+ */
+function resolveSafeRedirectUri(requestedUri?: string): string {
+  const fallback = 'https://aajkyabanaye-app.onrender.com/shopping/swiggy/callback';
+
+  // 1. Explicit request query param
+  if (requestedUri && typeof requestedUri === 'string') {
+    const trimmed = requestedUri.trim();
+    if (!trimmed.includes('trycloudflare.com') && (trimmed.startsWith('https://') || trimmed.startsWith('aajkyabanaye://'))) {
+      if (process.env.NODE_ENV === 'production' && trimmed.includes('localhost')) {
+        return fallback;
+      }
+      return trimmed;
+    }
+  }
+
+  // 2. Server environment configuration
+  const envUri = process.env.SWIGGY_REDIRECT_URI?.trim();
+  if (envUri && !envUri.includes('trycloudflare.com') && (envUri.startsWith('https://') || envUri.startsWith('aajkyabanaye://'))) {
+    if (process.env.NODE_ENV === 'production' && envUri.includes('localhost')) {
+      return fallback;
+    }
+    return envUri;
+  }
+
+  // 3. Fallback to live production Render callback
+  return fallback;
+}
+
+/**
  * GET /shopping/swiggy/auth-url
  * Initiate OAuth 2.1 PKCE authorization flow for Swiggy MCP.
  * Persists state session in MongoDB to survive restarts and multi-instance load.
  */
 shoppingRouter.get('/shopping/swiggy/auth-url', optionalAuth, async (req: Request, res: Response) => {
-  const defaultCallback = process.env.SWIGGY_REDIRECT_URI || 'https://aajkyabanaye-app.onrender.com/shopping/swiggy/callback';
   const customUri = req.query.redirectUri as string | undefined;
-  const redirectUri = customUri && (customUri.startsWith('https://') || customUri.startsWith('aajkyabanaye://')) ? customUri : defaultCallback;
+  const redirectUri = resolveSafeRedirectUri(customUri);
   const state = req.query.state as string | undefined;
 
   const { authUrl, state: csrfState } = await swiggyMcp.createAuthUrl(redirectUri, req.userId, state);
@@ -220,7 +250,7 @@ shoppingRouter.post('/shopping/swiggy/exchange', optionalAuth, async (req: Reque
       return res.status(400).json({ error: { code: 'INVALID_STATE', message: 'Invalid or expired state session' } });
     }
 
-    const redirectUri = session.redirectUri || process.env.SWIGGY_REDIRECT_URI || 'https://aajkyabanaye-app.onrender.com/shopping/swiggy/callback';
+    const redirectUri = resolveSafeRedirectUri(session.redirectUri);
     const verifier = session.codeVerifier;
 
     const boundUserId = session.clerkUserId || req.userId;
@@ -300,7 +330,7 @@ shoppingRouter.get('/shopping/swiggy/callback', async (req: Request, res: Respon
       return res.status(400).send('Invalid or expired OAuth state');
     }
 
-    await swiggyMcp.exchangeCode(code, session.codeVerifier, session.redirectUri, session.clerkUserId);
+    await swiggyMcp.exchangeCode(code, session.codeVerifier, resolveSafeRedirectUri(session.redirectUri), session.clerkUserId);
 
     res.send(`
       <html>

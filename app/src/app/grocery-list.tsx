@@ -13,7 +13,7 @@ import {
   Linking,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
@@ -43,6 +43,7 @@ const CATEGORY_NAMES: Record<string, string> = {
 
 export default function GroceryListScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { isSignedIn } = useAuth();
 
   const { data: lists, isLoading: isLoadingLists } = useGroceryLists();
@@ -248,7 +249,7 @@ export default function GroceryListScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <IconButton
@@ -354,7 +355,13 @@ export default function GroceryListScreen() {
           iconName="basket-outline"
         />
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollList} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollList,
+            { paddingBottom: 110 + Math.max(insets.bottom, 16) },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
           {categorizedItems.map(([catName, items]) => (
             <View key={catName} style={styles.categoryBlock}>
               <View style={styles.catHeaderRow}>
@@ -402,7 +409,14 @@ export default function GroceryListScreen() {
 
       {/* Floating Bottom Action Bar */}
       {totalItems > 0 && (
-        <View style={styles.bottomBar}>
+        <View
+          style={[
+            styles.bottomBar,
+            {
+              paddingBottom: Math.max(insets.bottom, 14) + 12,
+            },
+          ]}
+        >
           <Button
             title="Copy List"
             onPress={handleCopyList}
@@ -758,7 +772,8 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: Colors.background.card,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
     borderTopWidth: 1,

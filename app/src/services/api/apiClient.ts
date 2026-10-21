@@ -412,11 +412,12 @@ class ApiClient {
   /**
    * Fetch Swiggy OAuth 2.1 PKCE authorization URL
    */
-  async getSwiggyAuthUrl(): Promise<{
+  async getSwiggyAuthUrl(redirectUri?: string): Promise<{
     success: boolean;
     data: { authUrl: string; state: string; redirectUri: string };
   }> {
-    return this.request('/shopping/swiggy/auth-url');
+    const safeUri = redirectUri || 'https://aajkyabanaye-app.onrender.com/shopping/swiggy/callback';
+    return this.request(`/shopping/swiggy/auth-url?redirectUri=${encodeURIComponent(safeUri)}`);
   }
 
   /**

@@ -313,7 +313,27 @@ export function ShoppingReviewSheet({
     try {
       const res = await apiClient.getSwiggyAuthUrl();
       if (res?.data?.authUrl) {
-        await WebBrowser.openBrowserAsync(res.data.authUrl);
+        const authResult = await WebBrowser.openAuthSessionAsync(
+          res.data.authUrl,
+          res.data.redirectUri
+        );
+
+        if (authResult.type === 'success' && authResult.url) {
+          try {
+            const urlObj = new URL(authResult.url);
+            const code = urlObj.searchParams.get('code');
+            const state = urlObj.searchParams.get('state');
+
+            if (code) {
+              await apiClient.exchangeSwiggyCode(code, state || undefined);
+              setIsSwiggyConnected(true);
+              setToastMessage('Swiggy Account Connected! 🎉');
+              setTimeout(() => setToastMessage(null), 3000);
+            }
+          } catch (parseErr) {
+            console.warn('Callback URL parse notice:', parseErr);
+          }
+        }
       }
     } catch (e) {
       console.warn('Could not open Swiggy OAuth:', e);
