@@ -187,20 +187,25 @@ export function SmartCookingTimer({
     );
   }
 
+  const handleClose = () => {
+    setIsRunning(false);
+    setIsMinimized(false);
+    if (onClose) onClose();
+  };
+
   return (
     <Modal
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={() => {
-        if (isRunning) {
-          setIsMinimized(true);
-        } else if (onClose) {
-          onClose();
-        }
-      }}
+      onRequestClose={handleClose}
     >
       <View style={styles.modalOverlay}>
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={handleClose}
+          accessibilityLabel="Close timer overlay"
+        />
         <Animated.View
           style={[
             styles.timerCard,
@@ -233,14 +238,8 @@ export function SmartCookingTimer({
               )}
               <Pressable
                 style={styles.closeBtn}
-                onPress={() => {
-                  if (isRunning) {
-                    setIsMinimized(true);
-                  } else if (onClose) {
-                    onClose();
-                  }
-                }}
-                hitSlop={8}
+                onPress={handleClose}
+                hitSlop={10}
               >
                 <Ionicons name="close" size={20} color={Colors.text.DEFAULT} />
               </Pressable>

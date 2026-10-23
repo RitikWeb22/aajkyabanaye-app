@@ -78,6 +78,14 @@ export default function RecipeDetailScreen() {
     setIsTimerVisible(true);
   };
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/home');
+    }
+  };
+
   // Queries
   const {
     data: recipe,
@@ -302,7 +310,7 @@ export default function RecipeDetailScreen() {
         <View style={styles.topBar}>
           <IconButton
             icon={<Ionicons name="arrow-back" size={22} color={Colors.text.DEFAULT} />}
-            onPress={() => router.back()}
+            onPress={handleBack}
             variant="card"
             size="sm"
             accessibilityLabel="Back"
@@ -328,7 +336,7 @@ export default function RecipeDetailScreen() {
         <View style={styles.topBar}>
           <IconButton
             icon={<Ionicons name="arrow-back" size={22} color={Colors.text.DEFAULT} />}
-            onPress={() => router.back()}
+            onPress={handleBack}
             variant="card"
             size="sm"
             accessibilityLabel="Back"
@@ -356,13 +364,13 @@ export default function RecipeDetailScreen() {
       <View style={styles.topBar}>
         <IconButton
           icon={<Ionicons name="arrow-back" size={22} color={Colors.text.DEFAULT} />}
-          onPress={() => router.back()}
+          onPress={handleBack}
           variant="card"
           size="sm"
           accessibilityLabel="Back"
         />
         <Text style={styles.topBarTitle} numberOfLines={1}>
-          {recipe.title}
+          Recipe Details
         </Text>
         <View style={styles.topBarActions}>
           <IconButton
@@ -494,9 +502,9 @@ export default function RecipeDetailScreen() {
 
         {/* Servings Scaling Control Bar */}
         <View style={styles.servingsControlCard}>
-          <View>
+          <View style={{ flex: 1, paddingRight: 10 }}>
             <Text style={styles.servingsControlTitle}>Adjust Servings</Text>
-            <Text style={styles.servingsControlSubtitle}>
+            <Text style={styles.servingsControlSubtitle} numberOfLines={1}>
               {currentServings !== (recipe.servings || 4)
                 ? `Quantities scaled from ${recipe.servings || 4} to ${currentServings}`
                 : `Base recipe is set for ${recipe.servings || 4} servings`}
@@ -516,21 +524,21 @@ export default function RecipeDetailScreen() {
         {/* Interactive Ingredients Checklist */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <Text style={styles.sectionTitle}>Ingredient Checklist</Text>
+            <View style={{ flex: 1, paddingRight: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={styles.sectionTitle}>Ingredients</Text>
                 <View style={styles.swiggyBrandBadge}>
                   <Ionicons name="flash" size={9} color="#FFFFFF" />
-                  <Text style={styles.swiggyBrandText}>Powered by Swiggy</Text>
+                  <Text style={styles.swiggyBrandText}>Swiggy</Text>
                 </View>
               </View>
-              <Text style={styles.sectionSubtitle}>
-                Select missing items for 10-minute darkstore delivery
+              <Text style={styles.sectionSubtitle} numberOfLines={1}>
+                Check missing items to order
               </Text>
             </View>
             <View style={styles.counterPill}>
               <Text style={styles.counterPillText}>
-                {selectedCount} of {totalCount} selected
+                {selectedCount}/{totalCount}
               </Text>
             </View>
           </View>
@@ -784,37 +792,35 @@ export default function RecipeDetailScreen() {
         style={[
           styles.stickyBottomBar,
           {
-            paddingBottom: Math.max(insets.bottom, 14) + 12,
+            paddingBottom: Math.max(insets.bottom, 12) + 8,
           },
         ]}
       >
         <View style={styles.stickyInfo}>
           <View style={styles.swiggyRow}>
             <View style={styles.swiggyBrandBadge}>
-              <Ionicons name="flash" size={10} color="#FFFFFF" />
-              <Text style={styles.swiggyBrandText}>Powered by Swiggy</Text>
+              <Ionicons name="flash" size={9} color="#FFFFFF" />
+              <Text style={styles.swiggyBrandText}>Swiggy</Text>
             </View>
-            <Text style={styles.swiggyDeliveryTag}>⚡ 10-Min Instamart</Text>
+            <Text style={styles.swiggyDeliveryTag}>• 10m Delivery</Text>
           </View>
-          <Text style={styles.stickyCountText}>
+          <Text style={styles.stickyCountText} numberOfLines={1}>
             {selectedCount > 0
-              ? `${selectedCount} item${selectedCount > 1 ? 's' : ''} ready to order`
-              : 'Select ingredients you need'}
+              ? `${selectedCount} item${selectedCount > 1 ? 's' : ''} to order`
+              : 'Select ingredients'}
           </Text>
         </View>
 
-        <Button
-          title={
-            selectedCount === 0
-              ? 'Select Items'
-              : `Order on Swiggy (${selectedCount})`
-          }
+        <Pressable
+          style={[styles.swiggyOrderBtn, selectedCount === 0 && styles.swiggyOrderBtnDisabled]}
           onPress={handleShopSelected}
           disabled={selectedCount === 0}
-          variant="primary"
-          size="md"
-          icon={<Ionicons name="bag-handle-outline" size={17} color="#FFFFFF" />}
-        />
+        >
+          <Ionicons name="bag-handle" size={16} color="#FFFFFF" />
+          <Text style={styles.swiggyOrderBtnText}>
+            {selectedCount === 0 ? 'Select' : `Order (${selectedCount})`}
+          </Text>
+        </Pressable>
       </View>
 
       {/* Shopping Review Sheet (Phase 9) */}
@@ -1390,5 +1396,29 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins_600SemiBold',
     fontSize: 13,
     color: '#0F172A',
+  },
+  swiggyOrderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: '#1C4D38',
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 14,
+    shadowColor: '#1C4D38',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.22,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  swiggyOrderBtnDisabled: {
+    backgroundColor: '#94A3B8',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  swiggyOrderBtnText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 13.5,
+    color: '#FFFFFF',
   },
 });

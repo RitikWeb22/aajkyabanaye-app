@@ -361,32 +361,44 @@ export default function MealPlannerScreen() {
   };
 
   const handleConfirmDeleteEntry = (entryId: string, recipeTitle: string) => {
-    Alert.alert(
-      'Remove Meal?',
-      `Are you sure you want to remove "${recipeTitle}" from your schedule?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
+    const doDelete = () => {
+      setDeletingEntryId(entryId);
+      deleteEntryMutation.mutate(
         {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => {
-            setDeletingEntryId(entryId);
-            deleteEntryMutation.mutate(
-              {
-                entryId,
-                weekStart: weekStartStr,
-              },
-              {
-                onSettled: () => setDeletingEntryId(null),
-                onError: (err: any) => {
-                  Alert.alert('Error', err?.message || 'Could not remove meal.');
-                },
-              }
-            );
-          },
+          entryId,
+          weekStart: weekStartStr,
         },
-      ]
-    );
+        {
+          onSettled: () => setDeletingEntryId(null),
+          onError: (err: any) => {
+            if (Platform.OS === 'web') {
+              window.alert(err?.message || 'Could not remove meal.');
+            } else {
+              Alert.alert('Error', err?.message || 'Could not remove meal.');
+            }
+          },
+        }
+      );
+    };
+
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(`Remove "${recipeTitle}" from your meal plan?`)) {
+        doDelete();
+      }
+    } else {
+      Alert.alert(
+        'Remove Meal?',
+        `Are you sure you want to remove "${recipeTitle}" from your schedule?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Remove',
+            style: 'destructive',
+            onPress: doDelete,
+          },
+        ]
+      );
+    }
   };
 
   const handleGenerateGroceryList = () => {
