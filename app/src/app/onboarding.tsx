@@ -13,7 +13,6 @@ import {
 import { Image, ImageSource } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '../constants/theme';
 import { useAppStore } from '../store/useAppStore';
 
 interface SlideData {
@@ -32,7 +31,7 @@ const SLIDES: SlideData[] = [
     showLogo: true,
     titleLine1: 'Aaj kya',
     titleLine2: 'banega?',
-    rayColor: '#F59E0B', // Warm saffron golden
+    rayColor: '#F59E0B', // Saffron golden rays
     subtitle: 'Your AI-powered cooking assistant for easy, tasty and healthy meals.',
     image: require('../../assets/images/onboarding-1.png'),
   },
@@ -41,7 +40,7 @@ const SLIDES: SlideData[] = [
     showLogo: false,
     titleLine1: 'Cook with',
     titleLine2: 'what you have',
-    rayColor: '#10B981', // Fresh herb green
+    rayColor: '#10B981', // Fresh herb green rays
     subtitle: "Tell us what's in your pantry, get personalized recipes instantly.",
     image: require('../../assets/images/onboarding-2.png'),
   },
@@ -50,7 +49,7 @@ const SLIDES: SlideData[] = [
     showLogo: false,
     titleLine1: 'Plan. Cook.',
     titleLine2: 'Get it Delivered.',
-    rayColor: '#F59E0B', // Saffron golden
+    rayColor: '#F59E0B', // Saffron golden rays
     subtitle: 'Save your meals, plan your week and get ingredients from Instamart with one tap.',
     image: require('../../assets/images/onboarding-3.png'),
   },
@@ -91,13 +90,13 @@ export default function OnboardingScreen() {
     const floatLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(floatAnim, {
-          toValue: -5,
+          toValue: -6,
           duration: 1800,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
         Animated.timing(floatAnim, {
-          toValue: 5,
+          toValue: 6,
           duration: 1800,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
@@ -120,8 +119,8 @@ export default function OnboardingScreen() {
         friction: 10,
       }).start();
 
-      imageScaleAnim.setValue(0.94);
-      textFadeAnim.setValue(0.4);
+      imageScaleAnim.setValue(0.93);
+      textFadeAnim.setValue(0.3);
       Animated.parallel([
         Animated.spring(imageScaleAnim, {
           toValue: 1,
@@ -139,7 +138,7 @@ export default function OnboardingScreen() {
     [slideWidth, translateX, imageScaleAnim, textFadeAnim]
   );
 
-  // PanResponder for smooth finger swipe
+  // PanResponder for finger and mouse swipe gestures
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
@@ -178,7 +177,7 @@ export default function OnboardingScreen() {
     })
   ).current;
 
-  // Web keyboard navigation (Left/Right Arrow keys)
+  // Web keyboard navigation
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -225,10 +224,13 @@ export default function OnboardingScreen() {
 
   const isLast = currentIndex === SLIDES.length - 1;
 
+  // Dynamic illustration max height based on available screen height
+  const illustrationMaxHeight = Math.min(windowHeight * 0.44, 360);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={[styles.container, { maxWidth: slideWidth }]}>
-        {/* Top Header Row with Skip button */}
+        {/* Top Header Row with Skip Button on Right */}
         <View style={styles.topHeaderRow}>
           <View style={styles.topHeaderLeftPlaceholder} />
           <Pressable
@@ -260,14 +262,17 @@ export default function OnboardingScreen() {
                   key={slide.id}
                   style={[styles.slideItem, { width: slideWidth }]}
                 >
-                  {/* Top Content Area: Logo (Screen 1) + Heading + Subtitle */}
+                  {/* Top Text Content Area */}
                   <Animated.View
                     style={[
                       styles.topContentGroup,
-                      { opacity: isCurrent ? textFadeAnim : 1 },
+                      {
+                        opacity: isCurrent ? textFadeAnim : 1,
+                        paddingTop: slide.showLogo ? 0 : 12,
+                      },
                     ]}
                   >
-                    {/* Screen 1 Centered Official Brand Logo */}
+                    {/* Screen 1 Centered Brand Logo */}
                     {slide.showLogo && (
                       <View style={styles.brandLogoRow}>
                         <Image
@@ -279,7 +284,7 @@ export default function OnboardingScreen() {
                       </View>
                     )}
 
-                    {/* Bold Organic Dark Green Heading */}
+                    {/* Bold Organic Forest Green Title */}
                     <View style={styles.headingContainer}>
                       <Text style={styles.titleLine1}>{slide.titleLine1}</Text>
                       <View style={styles.titleLine2Row}>
@@ -288,11 +293,11 @@ export default function OnboardingScreen() {
                       </View>
                     </View>
 
-                    {/* Clean Subtitle */}
+                    {/* Subtitle */}
                     <Text style={styles.subtitle}>{slide.subtitle}</Text>
                   </Animated.View>
 
-                  {/* Hero Illustration Container matching reference cards */}
+                  {/* Centered Transparent Hero Illustration */}
                   <View style={styles.imageContainer}>
                     <Animated.View
                       style={[
@@ -309,12 +314,7 @@ export default function OnboardingScreen() {
                         source={slide.image}
                         style={[
                           styles.heroIllustration,
-                          slide.id === '1'
-                            ? styles.heroIllustration1
-                            : styles.heroIllustrationTall,
-                          {
-                            maxHeight: windowHeight * (slide.id === '1' ? 0.42 : 0.46),
-                          },
+                          { height: illustrationMaxHeight },
                         ]}
                         contentFit="contain"
                         priority="high"
@@ -327,7 +327,7 @@ export default function OnboardingScreen() {
           </Animated.View>
         </View>
 
-        {/* Bottom Navigation Area: Pagination Dots + Dark Forest Green Pill Button */}
+        {/* Bottom Navigation Area: Pagination Dots + Forest Green Button */}
         <View style={styles.bottomArea}>
           {/* Centered Pagination Dots */}
           <View style={styles.dotsRow}>
@@ -346,7 +346,7 @@ export default function OnboardingScreen() {
             ))}
           </View>
 
-          {/* Large Forest Green Pill Button */}
+          {/* Action Button */}
           {isLast ? (
             <View style={styles.lastActionContainer}>
               <Pressable
@@ -401,9 +401,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
+    paddingHorizontal: 26,
     paddingTop: 8,
-    paddingBottom: 4,
+    paddingBottom: 2,
     zIndex: 10,
   },
   topHeaderLeftPlaceholder: {
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
   skipBtnText: {
     fontFamily: 'Inter_500Medium',
     fontSize: 15,
-    color: '#606C62',
+    color: '#657368',
   },
   carouselContainer: {
     flex: 1,
@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
   },
   slideItem: {
     flex: 1,
-    paddingHorizontal: 26,
+    paddingHorizontal: 28,
     justifyContent: 'space-between',
   },
   topContentGroup: {
@@ -439,21 +439,21 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   screenBrandLogo: {
-    width: 140,
-    height: 74,
+    width: 130,
+    height: 70,
   },
   headingContainer: {
-    marginTop: 4,
+    marginTop: 2,
   },
   titleLine1: {
     fontFamily: 'Poppins_700Bold',
-    fontSize: 34,
+    fontSize: 32,
     color: '#0B3A2C',
-    lineHeight: 40,
-    letterSpacing: -0.6,
+    lineHeight: 38,
+    letterSpacing: -0.5,
   },
   titleLine2Row: {
     flexDirection: 'row',
@@ -461,10 +461,10 @@ const styles = StyleSheet.create({
   },
   titleLine2: {
     fontFamily: 'Poppins_700Bold',
-    fontSize: 34,
+    fontSize: 32,
     color: '#0B3A2C',
-    lineHeight: 40,
-    letterSpacing: -0.6,
+    lineHeight: 38,
+    letterSpacing: -0.5,
   },
   raysContainer: {
     flexDirection: 'row',
@@ -481,20 +481,20 @@ const styles = StyleSheet.create({
   rayTop: {
     width: 12,
     height: 3,
-    top: 3,
+    top: 4,
     left: 2,
     transform: [{ rotate: '-25deg' }],
   },
   rayMid: {
     width: 15,
     height: 3,
-    top: 12,
+    top: 13,
     left: 4,
   },
   rayBot: {
     width: 12,
     height: 3,
-    bottom: 3,
+    bottom: 4,
     left: 2,
     transform: [{ rotate: '25deg' }],
   },
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    paddingVertical: 6,
+    paddingVertical: 8,
   },
   imageAnimatedWrapper: {
     width: '100%',
@@ -521,16 +521,10 @@ const styles = StyleSheet.create({
   heroIllustration: {
     width: '100%',
   },
-  heroIllustration1: {
-    height: 270,
-  },
-  heroIllustrationTall: {
-    height: 330,
-  },
   bottomArea: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 26,
     paddingBottom: 24,
-    paddingTop: 10,
+    paddingTop: 8,
     width: '100%',
     alignItems: 'center',
     zIndex: 10,
@@ -540,7 +534,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginBottom: 18,
+    marginBottom: 16,
   },
   dot: {
     height: 8,
