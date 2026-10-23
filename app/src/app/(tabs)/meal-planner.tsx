@@ -57,31 +57,46 @@ const SLOT_CONFIG: Record<
     time: string;
     icon: keyof typeof Ionicons.glyphMap;
     placeholder: string;
+    accentColor: string;
+    bgTint: string;
+    quickPills: string[];
   }
 > = {
   breakfast: {
     name: 'Breakfast',
     time: '8:30 AM',
-    icon: 'sunny-outline',
-    placeholder: 'Choose something energizing for breakfast',
+    icon: 'sunny',
+    placeholder: 'Pick an energizing breakfast',
+    accentColor: '#D97706',
+    bgTint: '#FEF3C7',
+    quickPills: ['Poha', 'Upma', 'Idli Sambar', 'Omelette'],
   },
   lunch: {
     name: 'Lunch',
     time: '1:00 PM',
-    icon: 'restaurant-outline',
-    placeholder: 'Plan a wholesome lunch for your day',
+    icon: 'restaurant',
+    placeholder: 'Plan a wholesome mid-day lunch',
+    accentColor: '#20563F',
+    bgTint: '#EAF5EC',
+    quickPills: ['Rajma Chawal', 'Paneer Bhurji', 'Dal Tadka', 'Biryani'],
   },
   snack: {
     name: 'Evening Snack',
     time: '5:00 PM',
-    icon: 'cafe-outline',
-    placeholder: 'Pick a light bite or tea-time snack',
+    icon: 'cafe',
+    placeholder: 'Pick a light tea-time snack',
+    accentColor: '#EA580C',
+    bgTint: '#FFEDD5',
+    quickPills: ['Dhokla', 'Chaat', 'Sprouts', 'Cutlet'],
   },
   dinner: {
     name: 'Dinner',
     time: '8:30 PM',
-    icon: 'moon-outline',
-    placeholder: 'Select a comforting dinner to end the day',
+    icon: 'moon',
+    placeholder: 'Select a comforting dinner',
+    accentColor: '#4338CA',
+    bgTint: '#EEF2FF',
+    quickPills: ['Palak Paneer', 'Khichdi', 'Veg Curry', 'Roti Sabzi'],
   },
 };
 
@@ -217,6 +232,16 @@ export default function MealPlannerScreen() {
       counts[e.date] = (counts[e.date] || 0) + 1;
     });
     return counts;
+  }, [mealPlan?.entries]);
+
+  // Slots planned for each date for calendar dot indicators
+  const slotsByDate = useMemo(() => {
+    const map: Record<string, Set<string>> = {};
+    mealPlan?.entries?.forEach((e) => {
+      if (!map[e.date]) map[e.date] = new Set();
+      map[e.date].add(e.slot);
+    });
+    return map;
   }, [mealPlan?.entries]);
 
   // Entries for the currently selected day
@@ -433,13 +458,19 @@ export default function MealPlannerScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      {/* 3. Screen Header */}
+      {/* 3. Redesigned Screen Header */}
       <View style={styles.header}>
         <View style={styles.headerTopRow}>
           <View style={{ flex: 1, paddingRight: 8 }}>
-            <Text style={styles.screenTitle}>Your Meal Plan</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+              <Text style={styles.screenTitle}>Your Meal Plan</Text>
+              <View style={styles.swiggyHeaderBadge}>
+                <Ionicons name="flash" size={10} color="#FFFFFF" />
+                <Text style={styles.swiggyHeaderBadgeText}>Swiggy Sync</Text>
+              </View>
+            </View>
             <Text style={styles.screenSubtitle}>
-              Plan your week, one delicious meal at a time.
+              Plan meals, track balance & auto-sync ingredients
             </Text>
           </View>
 
@@ -451,7 +482,7 @@ export default function MealPlannerScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Jump to Current Week"
               >
-                <Ionicons name="today-outline" size={13} color={Colors.primary.DEFAULT} />
+                <Ionicons name="today" size={13} color="#20563F" />
                 <Text style={styles.todayShortcutText}>Today</Text>
               </Pressable>
             )}
@@ -464,7 +495,7 @@ export default function MealPlannerScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Previous week"
               >
-                <Ionicons name="chevron-back" size={18} color={Colors.text.DEFAULT} />
+                <Ionicons name="chevron-back" size={18} color="#1F2937" />
               </Pressable>
               <Pressable
                 onPress={handleNextWeek}
@@ -473,7 +504,7 @@ export default function MealPlannerScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Next week"
               >
-                <Ionicons name="chevron-forward" size={18} color={Colors.text.DEFAULT} />
+                <Ionicons name="chevron-forward" size={18} color="#1F2937" />
               </Pressable>
             </View>
           </View>
@@ -482,14 +513,14 @@ export default function MealPlannerScreen() {
         {/* Date range & total planned meals indicator */}
         <View style={styles.headerMetaRow}>
           <View style={styles.dateRangeBadge}>
-            <Ionicons name="calendar-outline" size={14} color={Colors.primary.DEFAULT} />
+            <Ionicons name="calendar-outline" size={13} color="#20563F" />
             <Text style={styles.dateRangeText}>{weekRangeLabel}</Text>
           </View>
 
           <View style={styles.totalMealsBadge}>
-            <Ionicons name="restaurant-outline" size={13} color={Colors.accent.DEFAULT} />
+            <Ionicons name="restaurant-outline" size={13} color="#D97706" />
             <Text style={styles.totalMealsText}>
-              {totalPlannedInWeek} {totalPlannedInWeek === 1 ? 'meal' : 'meals'} planned
+              {totalPlannedInWeek} of 28 meals scheduled
             </Text>
           </View>
         </View>
@@ -499,7 +530,7 @@ export default function MealPlannerScreen() {
         contentContainerStyle={styles.mainScrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* 4. Weekly Calendar Selector */}
+        {/* 4. Weekly Calendar Selector (Redesigned Pill Tabs) */}
         <View style={styles.calendarStripSection}>
           <ScrollView
             horizontal
@@ -515,10 +546,10 @@ export default function MealPlannerScreen() {
                   key={d.dateStr}
                   onPress={() => setSelectedDayIndex(index)}
                   style={({ pressed }) => [
-                    styles.dayCard,
-                    isSelected && styles.dayCardActive,
-                    d.isToday && !isSelected && styles.dayCardToday,
-                    pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+                    styles.dayPill,
+                    isSelected && styles.dayPillActive,
+                    d.isToday && !isSelected && styles.dayPillToday,
+                    pressed && { transform: [{ scale: 0.97 }] },
                   ]}
                   accessibilityRole="button"
                   accessibilityState={{ selected: isSelected }}
@@ -528,14 +559,14 @@ export default function MealPlannerScreen() {
                   {d.isToday && (
                     <View
                       style={[
-                        styles.todayMiniBadge,
-                        isSelected && styles.todayMiniBadgeActive,
+                        styles.todayPillBadge,
+                        isSelected && styles.todayPillBadgeActive,
                       ]}
                     >
                       <Text
                         style={[
-                          styles.todayMiniText,
-                          isSelected && styles.todayMiniTextActive,
+                          styles.todayPillText,
+                          isSelected && styles.todayPillTextActive,
                         ]}
                       >
                         TODAY
@@ -545,43 +576,38 @@ export default function MealPlannerScreen() {
 
                   <Text
                     style={[
-                      styles.dayShortText,
-                      isSelected && styles.dayTextActive,
-                      d.isToday && !isSelected && styles.dayTextTodayMuted,
+                      styles.dayShortName,
+                      isSelected && styles.dayShortNameActive,
+                      d.isToday && !isSelected && styles.dayShortNameToday,
                     ]}
                   >
                     {d.short}
                   </Text>
                   <Text
                     style={[
-                      styles.dayNumText,
-                      isSelected && styles.dayTextActive,
+                      styles.dayNumber,
+                      isSelected && styles.dayNumberActive,
                     ]}
                   >
                     {d.dayNum}
                   </Text>
 
-                  {/* Planned meals indicators */}
-                  <View style={styles.dayMealsIndicatorRow}>
-                    {plannedCount > 0 ? (
-                      <View
-                        style={[
-                          styles.dayCountPill,
-                          isSelected && styles.dayCountPillActive,
-                        ]}
-                      >
-                        <Text
+                  {/* 4 Mini Meal Dots (Breakfast, Lunch, Snack, Dinner) */}
+                  <View style={styles.mealDotsRow}>
+                    {SLOT_ORDER.map((slot) => {
+                      const hasMeal = Boolean(slotsByDate[d.dateStr]?.has(slot));
+                      const cfg = SLOT_CONFIG[slot];
+                      return (
+                        <View
+                          key={slot}
                           style={[
-                            styles.dayCountPillText,
-                            isSelected && styles.dayCountPillTextActive,
+                            styles.slotDot,
+                            hasMeal && { backgroundColor: isSelected ? '#FFFFFF' : cfg.accentColor },
+                            !hasMeal && styles.slotDotEmpty,
                           ]}
-                        >
-                          {plannedCount}
-                        </Text>
-                      </View>
-                    ) : (
-                      <View style={styles.dayDotEmpty} />
-                    )}
+                        />
+                      );
+                    })}
                   </View>
                 </Pressable>
               );
@@ -589,65 +615,40 @@ export default function MealPlannerScreen() {
           </ScrollView>
         </View>
 
-        {/* 6. Weekly Progress Summary */}
-        <View style={styles.progressCard}>
-          <View style={styles.progressCardHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Ionicons name="pie-chart-outline" size={16} color={Colors.primary.DEFAULT} />
-              <Text style={styles.progressTitle}>Weekly Progress</Text>
+        {/* 5. Daily Schedule & Balance Card */}
+        <View style={styles.dailyBalanceCard}>
+          <View style={styles.dailyBalanceLeft}>
+            <View style={styles.dailyDayBadge}>
+              <Text style={styles.dailyDayBadgeText}>{selectedDay.full}</Text>
+              <Text style={styles.dailyDayDateText}>
+                {selectedDay.dayNum} {selectedDay.month}
+              </Text>
             </View>
-            <Text style={styles.progressPercentText}>{progressPercent}% planned</Text>
+            <View>
+              <Text style={styles.dailyMenuHeading}>Today's Schedule</Text>
+              <Text style={styles.dailyMenuSub}>
+                {Object.keys(entriesForSelectedDay).length} of 4 meals planned
+              </Text>
+            </View>
           </View>
 
-          {/* Progress Bar Track */}
-          <View style={styles.progressBarTrack}>
-            <View
-              style={[
-                styles.progressBarFill,
-                { width: `${progressPercent}%` },
-              ]}
-            />
-          </View>
-
-          {/* Metric Stats Grid */}
-          <View style={styles.progressStatsRow}>
-            <View style={styles.progressStatCol}>
-              <Text style={styles.progressStatVal}>{totalPlannedInWeek} / 28</Text>
-              <Text style={styles.progressStatLabel}>Meals Planned</Text>
+          <View style={styles.dailyBalanceStats}>
+            <View style={styles.statPill}>
+              <Ionicons name="flame-outline" size={12} color="#D97706" />
+              <Text style={styles.statPillText}>~1,650 kcal</Text>
             </View>
-            <View style={styles.progressStatDivider} />
-            <View style={styles.progressStatCol}>
-              <Text style={styles.progressStatVal}>{daysWithMealsCount} / 7</Text>
-              <Text style={styles.progressStatLabel}>Active Days</Text>
-            </View>
-            <View style={styles.progressStatDivider} />
-            <View style={styles.progressStatCol}>
-              <Text style={styles.progressStatVal}>{emptySlotsCount}</Text>
-              <Text style={styles.progressStatLabel}>Empty Slots</Text>
+            <View style={styles.statPill}>
+              <Ionicons name="barbell-outline" size={12} color="#20563F" />
+              <Text style={styles.statPillText}>68g Protein</Text>
             </View>
           </View>
         </View>
 
-        {/* 5. Daily Schedule Header */}
-        <View style={styles.dailyScheduleHeader}>
-          <View>
-            <Text style={styles.dailyScheduleTitle}>{selectedDay.full}'s Menu</Text>
-            <Text style={styles.dailyScheduleSubtitle}>
-              Choose what you'll cook throughout the day.
-            </Text>
-          </View>
-          <View style={styles.dailyScheduleDateBadge}>
-            <Text style={styles.dailyScheduleDateText}>
-              {selectedDay.dayNum} {selectedDay.month}
-            </Text>
-          </View>
-        </View>
-
-        {/* 5. Daily Meal Slots */}
+        {/* 6. Daily Meal Slots */}
         {isLoadingPlan ? (
           <View style={styles.loadingSkeletonsWrapper}>
             {[1, 2, 3, 4].map((n) => (
-              <Skeleton key={n} width="100%" height={96} borderRadius={20} />
+              <Skeleton key={n} width="100%" height={110} borderRadius={24} />
             ))}
           </View>
         ) : (
@@ -659,20 +660,20 @@ export default function MealPlannerScreen() {
 
               return (
                 <View key={slotKey} style={styles.slotCard}>
-                  {/* Slot Title & Scheduled Time Header */}
+                  {/* Slot Header */}
                   <View style={styles.slotHeader}>
                     <View style={styles.slotTitleRow}>
-                      <View style={styles.slotIconCircle}>
+                      <View style={[styles.slotIconCircle, { backgroundColor: cfg.bgTint }]}>
                         <Ionicons
                           name={cfg.icon}
-                          size={16}
-                          color={Colors.primary.DEFAULT}
+                          size={15}
+                          color={cfg.accentColor}
                         />
                       </View>
                       <Text style={styles.slotName}>{cfg.name}</Text>
                     </View>
                     <View style={styles.slotTimeBadge}>
-                      <Ionicons name="time-outline" size={12} color={Colors.text.muted} />
+                      <Ionicons name="time-outline" size={11} color={Colors.text.muted} />
                       <Text style={styles.slotTime}>{cfg.time}</Text>
                     </View>
                   </View>
@@ -709,7 +710,7 @@ export default function MealPlannerScreen() {
                           <View style={styles.mealSubRow}>
                             <Badge type={entry.snapshot.isVeg ? 'veg' : 'nonVeg'} />
                             <Text style={styles.mealCuisine} numberOfLines={1}>
-                              {entry.snapshot.cuisine || 'Curry'}
+                              {entry.snapshot.cuisine || 'Home Style'}
                             </Text>
                             {entry.snapshot.cookTimeMins && (
                               <Text style={styles.mealTime}>
@@ -719,12 +720,10 @@ export default function MealPlannerScreen() {
                           </View>
                         </View>
 
-                        <Ionicons
-                          name="chevron-forward"
-                          size={18}
-                          color={Colors.border.DEFAULT}
-                          style={{ marginHorizontal: 4 }}
-                        />
+                        <View style={styles.cookNowPill}>
+                          <Text style={styles.cookNowText}>Cook</Text>
+                          <Ionicons name="arrow-forward" size={12} color="#20563F" />
+                        </View>
                       </Pressable>
 
                       {/* Remove meal action button */}
@@ -741,36 +740,53 @@ export default function MealPlannerScreen() {
                         {isDeletingThis ? (
                           <ActivityIndicator size="small" color="#DC2626" />
                         ) : (
-                          <Ionicons name="trash-outline" size={18} color="#DC2626" />
+                          <Ionicons name="trash-outline" size={17} color="#DC2626" />
                         )}
                       </Pressable>
                     </View>
                   ) : (
-                    /* Empty Meal Slot */
-                    <Pressable
-                      style={({ pressed }) => [
-                        styles.emptySlotRow,
-                        pressed && { backgroundColor: '#F3EFE6' },
-                      ]}
-                      onPress={() => setPickerModalSlot(slotKey)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Add recipe to ${cfg.name}`}
-                    >
-                      <View style={styles.emptyAddIconCircle}>
-                        <Ionicons name="add" size={18} color={Colors.primary.DEFAULT} />
+                    /* Empty Meal Slot with Quick Suggestion Pills */
+                    <View style={styles.emptySlotContainer}>
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.emptySlotRow,
+                          pressed && { backgroundColor: '#F3EFE6' },
+                        ]}
+                        onPress={() => setPickerModalSlot(slotKey)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Add recipe to ${cfg.name}`}
+                      >
+                        <View style={[styles.emptyAddIconCircle, { borderColor: cfg.accentColor }]}>
+                          <Ionicons name="add" size={18} color={cfg.accentColor} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.emptySlotMainText}>+ Add {cfg.name}</Text>
+                          <Text style={styles.emptySlotSubText} numberOfLines={1}>
+                            {cfg.placeholder}
+                          </Text>
+                        </View>
+                        <View style={styles.browsePill}>
+                          <Text style={styles.browsePillText}>Browse</Text>
+                          <Ionicons name="chevron-forward" size={12} color={Colors.text.muted} />
+                        </View>
+                      </Pressable>
+
+                      {/* Quick Suggestion Chips */}
+                      <View style={styles.quickPillsRow}>
+                        {cfg.quickPills.map((pill) => (
+                          <Pressable
+                            key={pill}
+                            style={styles.quickSuggestionChip}
+                            onPress={() => {
+                              setPickerModalSlot(slotKey);
+                              setModalSearch(pill);
+                            }}
+                          >
+                            <Text style={styles.quickSuggestionChipText}>+ {pill}</Text>
+                          </Pressable>
+                        ))}
                       </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.emptySlotMainText}>Add a recipe</Text>
-                        <Text style={styles.emptySlotSubText} numberOfLines={1}>
-                          {cfg.placeholder}
-                        </Text>
-                      </View>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={16}
-                        color={Colors.text.muted}
-                      />
-                    </Pressable>
+                    </View>
                   )}
                 </View>
               );
@@ -778,47 +794,47 @@ export default function MealPlannerScreen() {
           </View>
         )}
 
-        {/* 7. Smart Grocery List Card */}
+        {/* 7. Consolidated Smart Grocery Card with Swiggy Instamart */}
         <View style={styles.groceryCtaCard}>
-          <View style={styles.groceryCtaIconCol}>
-            <View style={styles.groceryIconCircle}>
-              <Ionicons name="basket-outline" size={24} color={Colors.primary.DEFAULT} />
+          <View style={styles.groceryCtaHeader}>
+            <View style={styles.groceryIconBadge}>
+              <Ionicons name="cart" size={20} color="#FFFFFF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={styles.swiggyRowHeader}>
+                <Text style={styles.groceryCtaTitle}>Smart Grocery Sync</Text>
+                <View style={styles.swiggyInstamartPill}>
+                  <Ionicons name="flash" size={10} color="#FFFFFF" />
+                  <Text style={styles.swiggyInstamartPillText}>Swiggy Instamart</Text>
+                </View>
+              </View>
+              <Text style={styles.groceryCtaSubtitle}>
+                Automatically consolidates ingredients from all your planned meals. Get missing spices and fresh veggies in 10 mins!
+              </Text>
             </View>
           </View>
 
-          <View style={{ flex: 1 }}>
-            <View style={styles.groceryTitleRow}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <Text style={styles.groceryCtaTitle}>Your smart shopping list</Text>
-                <View style={styles.swiggyCoBrandBadge}>
-                  <Ionicons name="flash" size={9} color="#FFFFFF" />
-                  <Text style={styles.swiggyCoBrandText}>Powered by Swiggy</Text>
-                </View>
-              </View>
-              <View style={styles.groceryCountPill}>
-                <Text style={styles.groceryCountPillText}>
-                  {totalPlannedInWeek} planned
-                </Text>
-              </View>
+          <View style={styles.groceryCtaFooter}>
+            <View style={styles.groceryStatsPill}>
+              <Ionicons name="restaurant" size={13} color="#20563F" />
+              <Text style={styles.groceryStatsPillText}>
+                {totalPlannedInWeek} meals ready to sync
+              </Text>
             </View>
-
-            <Text style={styles.groceryCtaSubtitle}>
-              Combine ingredients from this week's planned meals into one consolidated grocery list.
-            </Text>
 
             <Button
               title={
                 totalPlannedInWeek === 0
-                  ? 'Plan meals to generate grocery list'
-                  : 'Generate Grocery List'
+                  ? 'Plan meals to sync grocery'
+                  : `Order Groceries (${totalPlannedInWeek} Meals) →`
               }
               onPress={handleGenerateGroceryList}
               loading={generateGroceryMutation.isPending}
               disabled={totalPlannedInWeek === 0 || generateGroceryMutation.isPending}
               variant="accent"
               size="md"
-              icon={<Ionicons name="cart" size={18} color="#FFFFFF" />}
-              style={{ marginTop: 12, alignSelf: 'flex-start' }}
+              icon={<Ionicons name="bag-handle" size={16} color="#FFFFFF" />}
+              style={styles.groceryOrderBtn}
             />
           </View>
         </View>
@@ -1240,199 +1256,180 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     gap: 8,
   },
-  dayCard: {
-    width: 60,
-    height: 84,
-    borderRadius: 20,
+  swiggyHeaderBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3.5,
+    backgroundColor: '#FC8019',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  swiggyHeaderBadgeText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 9.5,
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
+  },
+  dayPill: {
+    width: 62,
+    height: 94,
+    borderRadius: 22,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#E8E4DA',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  dayCardActive: {
-    backgroundColor: Colors.primary.DEFAULT,
-    borderColor: Colors.primary.DEFAULT,
-    shadowColor: Colors.primary.DEFAULT,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  dayCardToday: {
-    borderColor: Colors.primary.DEFAULT,
-    borderWidth: 1.5,
-  },
-  todayMiniBadge: {
-    backgroundColor: '#EAF5EC',
+    paddingVertical: 10,
     paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 6,
-    marginBottom: 2,
-  },
-  todayMiniBadgeActive: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  todayMiniText: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 8,
-    color: Colors.primary.DEFAULT,
-    letterSpacing: 0.5,
-  },
-  todayMiniTextActive: {
-    color: '#FFFFFF',
-  },
-  dayShortText: {
-    fontFamily: 'Inter_500Medium',
-    fontSize: 12,
-    color: Colors.text.muted,
-  },
-  dayNumText: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 18,
-    color: Colors.text.DEFAULT,
-    lineHeight: 22,
-  },
-  dayTextActive: {
-    color: '#FFFFFF',
-  },
-  dayTextTodayMuted: {
-    color: Colors.primary.DEFAULT,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  dayMealsIndicatorRow: {
-    height: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dayCountPill: {
-    backgroundColor: '#E8F3EC',
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-  },
-  dayCountPillActive: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
-  },
-  dayCountPillText: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 9,
-    color: Colors.primary.DEFAULT,
-  },
-  dayCountPillTextActive: {
-    color: '#FFFFFF',
-  },
-  dayDotEmpty: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#E4DFD3',
-  },
-
-  /* Weekly Progress Summary Card */
-  progressCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 18,
-    borderWidth: 1,
-    borderColor: '#ECE8DD',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
+    shadowOpacity: 0.04,
     shadowRadius: 6,
     elevation: 2,
   },
-  progressCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
+  dayPillActive: {
+    backgroundColor: '#20563F',
+    borderColor: '#20563F',
+    shadowColor: '#20563F',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    elevation: 5,
   },
-  progressTitle: {
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 14,
-    color: Colors.text.DEFAULT,
+  dayPillToday: {
+    borderColor: '#20563F',
+    borderWidth: 1.5,
+    backgroundColor: '#F8FBF9',
   },
-  progressPercentText: {
+  todayPillBadge: {
+    backgroundColor: '#EAF5EC',
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+  },
+  todayPillBadgeActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+  },
+  todayPillText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 7.5,
+    color: '#20563F',
+    letterSpacing: 0.5,
+  },
+  todayPillTextActive: {
+    color: '#FFFFFF',
+  },
+  dayShortName: {
     fontFamily: 'Inter_600SemiBold',
-    fontSize: 12,
-    color: Colors.primary.DEFAULT,
+    fontSize: 11,
+    color: '#6B7280',
+    letterSpacing: 0.4,
   },
-  progressBarTrack: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#F3EFE6',
-    overflow: 'hidden',
-    marginBottom: 14,
+  dayShortNameActive: {
+    color: 'rgba(255, 255, 255, 0.85)',
   },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 3,
-    backgroundColor: Colors.primary.DEFAULT,
+  dayShortNameToday: {
+    color: '#20563F',
   },
-  progressStatsRow: {
+  dayNumber: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 19,
+    color: '#111827',
+    lineHeight: 24,
+  },
+  dayNumberActive: {
+    color: '#FFFFFF',
+  },
+  mealDotsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 3,
+    marginTop: 2,
   },
-  progressStatCol: {
-    flex: 1,
-    alignItems: 'center',
+  slotDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
   },
-  progressStatVal: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 15,
-    color: Colors.text.DEFAULT,
-  },
-  progressStatLabel: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 11,
-    color: Colors.text.muted,
-    marginTop: 1,
-  },
-  progressStatDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: '#EDE8DE',
+  slotDotEmpty: {
+    backgroundColor: '#E5E7EB',
   },
 
-  /* Daily Schedule Header */
-  dailyScheduleHeader: {
+  /* Daily Balance Card */
+  dailyBalanceCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E8E5DC',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  dailyBalanceLeft: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 12,
     marginBottom: 12,
   },
-  dailyScheduleTitle: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 17,
-    color: Colors.text.DEFAULT,
+  dailyDayBadge: {
+    backgroundColor: '#F2F7F4',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#D8E8DD',
   },
-  dailyScheduleSubtitle: {
+  dailyDayBadgeText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 11,
+    color: '#20563F',
+    letterSpacing: 0.4,
+  },
+  dailyDayDateText: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 14,
+    color: '#1F2937',
+  },
+  dailyMenuHeading: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 15,
+    color: '#111827',
+  },
+  dailyMenuSub: {
     fontFamily: 'Inter_400Regular',
     fontSize: 12,
-    color: Colors.text.muted,
+    color: '#6B7280',
     marginTop: 1,
   },
-  dailyScheduleDateBadge: {
-    backgroundColor: '#F7F3EA',
+  dailyBalanceStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    paddingTop: 10,
+  },
+  statPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#F9FAFB',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E8E4DA',
+    borderColor: '#E5E7EB',
   },
-  dailyScheduleDateText: {
+  statPillText: {
     fontFamily: 'Inter_600SemiBold',
-    fontSize: 12,
-    color: Colors.text.DEFAULT,
+    fontSize: 11.5,
+    color: '#374151',
   },
 
   /* Slots */
@@ -1541,6 +1538,23 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: Colors.text.muted,
   },
+  cookNowPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#EAF5EC',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#C3E6CB',
+    marginRight: 4,
+  },
+  cookNowText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 11,
+    color: '#20563F',
+  },
   deleteEntryBtn: {
     padding: 8,
     marginLeft: 4,
@@ -1551,10 +1565,13 @@ const styles = StyleSheet.create({
   },
 
   /* Empty Slot Card */
+  emptySlotContainer: {
+    gap: 8,
+  },
   emptySlotRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FBF9F4',
+    backgroundColor: '#FAF8F4',
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 12,
@@ -1564,100 +1581,157 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   emptyAddIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#E2DDD0',
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptySlotMainText: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 13,
-    color: Colors.primary.DEFAULT,
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 13.5,
+    color: '#1F2937',
   },
   emptySlotSubText: {
     fontFamily: 'Inter_400Regular',
-    fontSize: 11,
+    fontSize: 11.5,
     color: Colors.text.muted,
     marginTop: 1,
   },
-
-  /* Smart Grocery List Card */
-  groceryCtaCard: {
+  browsePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
     backgroundColor: '#FFFFFF',
-    borderRadius: 22,
-    padding: 16,
-    marginTop: 18,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ECE7DB',
+    borderColor: '#E5E7EB',
+  },
+  browsePillText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 11,
+    color: '#6B7280',
+  },
+  quickPillsRow: {
     flexDirection: 'row',
-    gap: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  groceryCtaIconCol: {
-    paddingTop: 2,
-  },
-  groceryIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#EAF5EC',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  groceryTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     flexWrap: 'wrap',
     gap: 6,
+    paddingLeft: 4,
+    paddingTop: 2,
+  },
+  quickSuggestionChip: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  quickSuggestionChipText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 11,
+    color: '#4B5563',
+  },
+
+  /* Redesigned Smart Grocery List Card with Swiggy Instamart */
+  groceryCtaCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 18,
+    marginTop: 18,
+    borderWidth: 1.5,
+    borderColor: '#FED7AA',
+    shadowColor: '#FC8019',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  groceryCtaHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 14,
+  },
+  groceryIconBadge: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: '#FC8019',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#FC8019',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  swiggyRowHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+    marginBottom: 4,
   },
   groceryCtaTitle: {
-    fontFamily: 'Poppins_600SemiBold',
+    fontFamily: 'Poppins_700Bold',
     fontSize: 15,
-    color: Colors.text.DEFAULT,
+    color: '#1F2937',
   },
-  groceryCountPill: {
-    backgroundColor: '#FFF5E5',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#FDE3B8',
-  },
-  groceryCountPillText: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 10,
-    color: '#B45309',
-  },
-  groceryCtaSubtitle: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 12,
-    color: Colors.text.muted,
-    marginTop: 3,
-    lineHeight: 18,
-  },
-  swiggyCoBrandBadge: {
+  swiggyInstamartPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3.5,
     backgroundColor: '#FC8019',
     paddingHorizontal: 7,
     paddingVertical: 2,
-    borderRadius: 999,
+    borderRadius: 6,
   },
-  swiggyCoBrandText: {
+  swiggyInstamartPillText: {
     fontFamily: 'Inter_700Bold',
     fontSize: 9.5,
     color: '#FFFFFF',
-    letterSpacing: 0.1,
+    letterSpacing: 0.2,
+  },
+  groceryCtaSubtitle: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+    color: '#6B7280',
+    lineHeight: 18,
+  },
+  groceryCtaFooter: {
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    paddingTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  groceryStatsPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+  },
+  groceryStatsPillText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 11.5,
+    color: '#15803D',
+  },
+  groceryOrderBtn: {
+    borderRadius: 14,
   },
 
   /* Signed-Out State */
