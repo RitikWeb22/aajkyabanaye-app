@@ -47,7 +47,10 @@ function getMonday(d: Date): Date {
  * avoiding UTC offset date shifts.
  */
 function formatDateISO(d: Date): string {
-  return d.toISOString().split('T')[0];
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 const SLOT_CONFIG: Record<
@@ -312,12 +315,14 @@ export default function MealPlannerScreen() {
     const prev = new Date(currentMonday);
     prev.setDate(prev.getDate() - 7);
     setCurrentMonday(prev);
+    setSelectedDayIndex(0);
   };
 
   const handleNextWeek = () => {
     const next = new Date(currentMonday);
     next.setDate(next.getDate() + 7);
     setCurrentMonday(next);
+    setSelectedDayIndex(0);
   };
 
   const handleGoToToday = () => {
@@ -403,10 +408,17 @@ export default function MealPlannerScreen() {
 
   const handleGenerateGroceryList = () => {
     if (totalPlannedInWeek === 0) {
-      Alert.alert(
-        'Empty Meal Plan',
-        'Add at least one recipe to your weekly meal plan before generating a consolidated grocery list.'
-      );
+      if (Platform.OS === 'web') {
+        window.alert(
+          'No Meals Scheduled: Please schedule at least 1 meal in your weekly plan above by tapping "+ Add Meal", then generate your grocery list!'
+        );
+      } else {
+        Alert.alert(
+          'Empty Meal Plan',
+          'Add at least one recipe to your weekly meal plan above, then tap here to auto-generate your consolidated grocery list!'
+        );
+      }
+      setPickerModalSlot('breakfast');
       return;
     }
 
@@ -417,20 +429,35 @@ export default function MealPlannerScreen() {
       },
       {
         onSuccess: (data) => {
-          Alert.alert(
-            'Grocery List Created! 🎉',
-            `Consolidated ingredients for your weekly meals into "${data.name}".`,
-            [
-              {
-                text: 'View Grocery List',
-                onPress: () => router.push('/grocery-list'),
-              },
-              { text: 'Done', style: 'cancel' },
-            ]
-          );
+          if (Platform.OS === 'web') {
+            if (
+              window.confirm(
+                `Grocery List Created! 🎉\n\nConsolidated ingredients into "${data.name}".\n\nClick OK to view your Grocery List.`
+              )
+            ) {
+              router.push('/grocery-list');
+            }
+          } else {
+            Alert.alert(
+              'Grocery List Created! 🎉',
+              `Consolidated ingredients for your weekly meals into "${data.name}".`,
+              [
+                {
+                  text: 'View Grocery List',
+                  onPress: () => router.push('/grocery-list'),
+                },
+                { text: 'Done', style: 'cancel' },
+              ]
+            );
+          }
         },
         onError: (err: any) => {
-          Alert.alert('Error', err?.message || 'Could not generate grocery list.');
+          const msg = err?.message || 'Could not generate grocery list.';
+          if (Platform.OS === 'web') {
+            window.alert(`Error: ${msg}`);
+          } else {
+            Alert.alert('Error', msg);
+          }
         },
       }
     );
@@ -472,8 +499,9 @@ export default function MealPlannerScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       {/* 3. Redesigned Screen Header */}
       <View style={styles.header}>
+        {/* Title & Brand Row */}
         <View style={styles.headerTopRow}>
-          <View style={{ flex: 1, paddingRight: 8 }}>
+          <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
               <Text style={styles.screenTitle}>Your Meal Plan</Text>
               <View style={styles.swiggyHeaderBadge}>
@@ -485,8 +513,36 @@ export default function MealPlannerScreen() {
               Plan meals, track balance & auto-sync ingredients
             </Text>
           </View>
+        </View>
 
-          <View style={styles.headerControlsRow}>
+        {/* Dedicated Week Navigation Bar */}
+        <View style={styles.weekNavBarRow}>
+          <View style={styles.weekControlsContainer}>
+            <Pressable
+              onPress={handlePrevWeek}
+              style={styles.weekNavBtn}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Previous week"
+            >
+              <Ionicons name="chevron-back" size={17} color="#1F2937" />
+            </Pressable>
+
+            <View style={styles.dateRangeBadge}>
+              <Ionicons name="calendar-outline" size={13} color="#20563F" />
+              <Text style={styles.dateRangeText}>{weekRangeLabel}</Text>
+            </View>
+
+            <Pressable
+              onPress={handleNextWeek}
+              style={styles.weekNavBtn}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Next week"
+            >
+              <Ionicons name="chevron-forward" size={17} color="#1F2937" />
+            </Pressable>
+
             {!isCurrentWeek && (
               <Pressable
                 onPress={handleGoToToday}
@@ -494,45 +550,16 @@ export default function MealPlannerScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Jump to Current Week"
               >
-                <Ionicons name="today" size={13} color="#20563F" />
+                <Ionicons name="today" size={12} color="#20563F" />
                 <Text style={styles.todayShortcutText}>Today</Text>
               </Pressable>
             )}
-
-            <View style={styles.weekNavGroup}>
-              <Pressable
-                onPress={handlePrevWeek}
-                style={styles.weekNavBtn}
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityLabel="Previous week"
-              >
-                <Ionicons name="chevron-back" size={18} color="#1F2937" />
-              </Pressable>
-              <Pressable
-                onPress={handleNextWeek}
-                style={styles.weekNavBtn}
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityLabel="Next week"
-              >
-                <Ionicons name="chevron-forward" size={18} color="#1F2937" />
-              </Pressable>
-            </View>
-          </View>
-        </View>
-
-        {/* Date range & total planned meals indicator */}
-        <View style={styles.headerMetaRow}>
-          <View style={styles.dateRangeBadge}>
-            <Ionicons name="calendar-outline" size={13} color="#20563F" />
-            <Text style={styles.dateRangeText}>{weekRangeLabel}</Text>
           </View>
 
           <View style={styles.totalMealsBadge}>
-            <Ionicons name="restaurant-outline" size={13} color="#D97706" />
+            <Ionicons name="restaurant-outline" size={12} color="#D97706" />
             <Text style={styles.totalMealsText}>
-              {totalPlannedInWeek} of 28 meals scheduled
+              {totalPlannedInWeek}/28
             </Text>
           </View>
         </View>
@@ -837,12 +864,12 @@ export default function MealPlannerScreen() {
             <Button
               title={
                 totalPlannedInWeek === 0
-                  ? 'Plan meals to sync grocery'
-                  : `Order Groceries (${totalPlannedInWeek} Meals) →`
+                  ? '+ Plan Meals to Sync Groceries'
+                  : `Generate Groceries (${totalPlannedInWeek} Meals) →`
               }
               onPress={handleGenerateGroceryList}
               loading={generateGroceryMutation.isPending}
-              disabled={totalPlannedInWeek === 0 || generateGroceryMutation.isPending}
+              disabled={generateGroceryMutation.isPending}
               variant="accent"
               size="md"
               icon={<Ionicons name="bag-handle" size={16} color="#FFFFFF" />}
@@ -1177,26 +1204,33 @@ const styles = StyleSheet.create({
     color: Colors.text.muted,
     marginTop: 2,
   },
-  headerControlsRow: {
+  weekNavBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
     gap: 8,
-    marginTop: 2,
+  },
+  weekControlsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 1,
   },
   todayShortcutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 14,
+    gap: 3.5,
+    paddingHorizontal: 8,
+    paddingVertical: 4.5,
+    borderRadius: 10,
     backgroundColor: '#EBF4EF',
     borderWidth: 1,
     borderColor: '#D2E5DA',
   },
   todayShortcutText: {
     fontFamily: 'Inter_600SemiBold',
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.primary.DEFAULT,
   },
   weekNavGroup: {
@@ -1204,14 +1238,19 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   weekNavBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: Colors.border.DEFAULT,
+    borderColor: '#E8E5DC',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   headerMetaRow: {
     flexDirection: 'row',
@@ -1222,33 +1261,38 @@ const styles = StyleSheet.create({
   dateRangeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4.5,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 10,
+    paddingHorizontal: 9,
     paddingVertical: 5,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#EAE5D8',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   dateRangeText: {
     fontFamily: 'Inter_600SemiBold',
-    fontSize: 12,
+    fontSize: 11.5,
     color: Colors.primary.DEFAULT,
   },
   totalMealsBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     backgroundColor: '#FFF8EC',
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 5,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#FDE9C8',
   },
   totalMealsText: {
-    fontFamily: 'Inter_500Medium',
-    fontSize: 12,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 11,
     color: '#9A5B0B',
   },
 
