@@ -416,6 +416,17 @@ export default function RecipeDetailScreen() {
             <Badge type={recipe.dietary.vegetarian ? 'veg' : 'nonVeg'} />
             {recipe.isAiGenerated && <Badge type="ai" />}
           </View>
+
+          {/* Quick Floating Kitchen Timer Button */}
+          <Pressable
+            style={styles.floatingTimerBadge}
+            onPress={() => handleOpenTimer(recipe.cookTimeMins || 20, `${recipe.title} Cooking Timer`)}
+            accessibilityRole="button"
+            accessibilityLabel="Open kitchen timer"
+          >
+            <Ionicons name="stopwatch" size={13} color="#FFFFFF" />
+            <Text style={styles.floatingTimerText}>Kitchen Timer</Text>
+          </Pressable>
         </View>
 
         {/* Recipe Meta Header */}
@@ -432,20 +443,26 @@ export default function RecipeDetailScreen() {
             <Text style={styles.recipeDescription}>{recipe.description}</Text>
           )}
 
-          {/* Quick Stats Grid */}
+          {/* Quick Stats Grid (4 High-Impact Metrics) */}
           <View style={styles.statsCard}>
             <View style={styles.statItem}>
-              <Ionicons name="time-outline" size={20} color={Colors.primary.DEFAULT} />
-              <Text style={styles.statValue}>
-                {(recipe.cookTimeMins || 25) + (recipe.prepTimeMins || 10)} m
-              </Text>
-              <Text style={styles.statLabel}>Total Time</Text>
+              <Ionicons name="hourglass-outline" size={18} color="#1C4D38" />
+              <Text style={styles.statValue}>{recipe.prepTimeMins || 10}m</Text>
+              <Text style={styles.statLabel}>Prep Time</Text>
             </View>
 
             <View style={styles.statDivider} />
 
             <View style={styles.statItem}>
-              <Ionicons name="people-outline" size={20} color={Colors.primary.DEFAULT} />
+              <Ionicons name="flame-outline" size={18} color="#EA580C" />
+              <Text style={styles.statValue}>{recipe.cookTimeMins || 25}m</Text>
+              <Text style={styles.statLabel}>Cook Time</Text>
+            </View>
+
+            <View style={styles.statDivider} />
+
+            <View style={styles.statItem}>
+              <Ionicons name="people-outline" size={18} color="#2563EB" />
               <Text style={styles.statValue}>{currentServings}</Text>
               <Text style={styles.statLabel}>Servings</Text>
             </View>
@@ -453,7 +470,7 @@ export default function RecipeDetailScreen() {
             <View style={styles.statDivider} />
 
             <View style={styles.statItem}>
-              <Ionicons name="flame-outline" size={20} color={Colors.primary.DEFAULT} />
+              <Ionicons name="restaurant-outline" size={18} color="#1C4D38" />
               <Text style={styles.statValue}>
                 {recipe.difficulty ? recipe.difficulty.toUpperCase() : 'EASY'}
               </Text>
@@ -832,7 +849,7 @@ export default function RecipeDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.DEFAULT,
+    backgroundColor: '#F8FAFC',
   },
   topBar: {
     flexDirection: 'row',
@@ -840,15 +857,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: Colors.background.DEFAULT,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border.DEFAULT,
+    borderBottomColor: '#F1F5F9',
   },
   topBarTitle: {
     flex: 1,
     fontFamily: 'Poppins_600SemiBold',
-    fontSize: 16,
-    color: Colors.text.DEFAULT,
+    fontSize: 15,
+    color: '#0F172A',
     textAlign: 'center',
     marginHorizontal: 10,
   },
@@ -861,11 +878,11 @@ const styles = StyleSheet.create({
   },
   heroWrapper: {
     width: '100%',
-    height: 240,
+    height: 250,
     borderRadius: 24,
     overflow: 'hidden',
     position: 'relative',
-    backgroundColor: '#EAE5D8',
+    backgroundColor: '#E2E8F0',
     marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -884,6 +901,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  floatingTimerBadge: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(28, 77, 56, 0.88)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  floatingTimerText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 11,
+    color: '#FFFFFF',
+  },
   metaSection: {
     marginBottom: 18,
   },
@@ -896,21 +935,22 @@ const styles = StyleSheet.create({
   cuisineText: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 12,
-    color: Colors.primary.DEFAULT,
+    color: '#1C4D38',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   recipeTitle: {
     fontFamily: 'Poppins_700Bold',
     fontSize: 22,
-    color: Colors.text.DEFAULT,
+    color: '#0F172A',
     lineHeight: 28,
     marginBottom: 6,
+    letterSpacing: -0.3,
   },
   recipeDescription: {
     fontFamily: 'Inter_400Regular',
     fontSize: 13.5,
-    color: Colors.text.muted,
+    color: '#64748B',
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -918,12 +958,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: Colors.background.card,
+    backgroundColor: '#FFFFFF',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: Colors.border.DEFAULT,
+    borderColor: '#E2E8F0',
     paddingVertical: 14,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 5,
+    elevation: 2,
   },
   statItem: {
     alignItems: 'center',
@@ -932,39 +977,44 @@ const styles = StyleSheet.create({
   statValue: {
     fontFamily: 'Poppins_600SemiBold',
     fontSize: 14,
-    color: Colors.text.DEFAULT,
+    color: '#0F172A',
     marginTop: 4,
   },
   statLabel: {
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Inter_500Medium',
     fontSize: 11,
-    color: Colors.text.muted,
+    color: '#64748B',
   },
   statDivider: {
     width: 1,
-    height: 30,
-    backgroundColor: Colors.border.DEFAULT,
+    height: 28,
+    backgroundColor: '#E2E8F0',
   },
   servingsControlCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F7F4EC',
+    backgroundColor: '#FFFFFF',
     borderRadius: 18,
     padding: 14,
     borderWidth: 1,
-    borderColor: Colors.border.DEFAULT,
+    borderColor: '#E2E8F0',
     marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    elevation: 1,
   },
   servingsControlTitle: {
     fontFamily: 'Poppins_600SemiBold',
-    fontSize: 15,
-    color: Colors.text.DEFAULT,
+    fontSize: 14.5,
+    color: '#0F172A',
   },
   servingsControlSubtitle: {
     fontFamily: 'Inter_400Regular',
     fontSize: 11.5,
-    color: Colors.text.muted,
+    color: '#64748B',
     marginTop: 2,
   },
   section: {
@@ -978,17 +1028,17 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: 'Poppins_600SemiBold',
-    fontSize: 17,
-    color: Colors.text.DEFAULT,
+    fontSize: 16.5,
+    color: '#0F172A',
   },
   sectionSubtitle: {
     fontFamily: 'Inter_400Regular',
     fontSize: 12,
-    color: Colors.text.muted,
+    color: '#64748B',
     marginTop: 2,
   },
   counterPill: {
-    backgroundColor: '#EAF5EC',
+    backgroundColor: '#EBF6F0',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -996,7 +1046,7 @@ const styles = StyleSheet.create({
   counterPillText: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 11,
-    color: Colors.primary.DEFAULT,
+    color: '#1C4D38',
   },
   bulkActionBar: {
     flexDirection: 'row',
@@ -1008,40 +1058,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: Colors.background.card,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: Colors.border.DEFAULT,
+    borderColor: '#E2E8F0',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
   },
   bulkBtnHighlight: {
-    backgroundColor: '#EAF5EC',
-    borderColor: '#C3E4C9',
+    backgroundColor: '#EBF6F0',
+    borderColor: '#C6E3CD',
   },
   bulkBtnText: {
     fontFamily: 'Inter_500Medium',
     fontSize: 11.5,
-    color: Colors.text.DEFAULT,
+    color: '#334155',
   },
   progressContainer: {
-    backgroundColor: Colors.background.card,
+    backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: Colors.border.DEFAULT,
+    borderColor: '#E2E8F0',
     marginBottom: 12,
   },
   progressBarBg: {
     height: 8,
-    backgroundColor: '#F0ECE1',
+    backgroundColor: '#F1F5F9',
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 6,
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#248A3D',
+    backgroundColor: '#059669',
     borderRadius: 4,
   },
   progressLabelRow: {
@@ -1052,12 +1102,12 @@ const styles = StyleSheet.create({
   progressLabel: {
     fontFamily: 'Inter_500Medium',
     fontSize: 12,
-    color: Colors.text.muted,
+    color: '#64748B',
   },
   progressPercent: {
     fontFamily: 'Poppins_600SemiBold',
     fontSize: 12,
-    color: '#248A3D',
+    color: '#059669',
   },
   resetStepsBtn: {
     flexDirection: 'row',
@@ -1066,12 +1116,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
-    backgroundColor: '#F5F3EC',
+    backgroundColor: '#F1F5F9',
   },
   resetStepsText: {
     fontFamily: 'Inter_500Medium',
     fontSize: 11,
-    color: Colors.text.muted,
+    color: '#64748B',
   },
   openTimerHeaderBtn: {
     flexDirection: 'row',
@@ -1080,14 +1130,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
-    backgroundColor: '#EAF5EC',
+    backgroundColor: '#EBF6F0',
     borderWidth: 1,
-    borderColor: '#C3E6CB',
+    borderColor: '#C6E3CD',
   },
   openTimerHeaderText: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 12,
-    color: '#20563F',
+    color: '#1C4D38',
   },
   stepsContainer: {
     marginTop: 10,
@@ -1097,17 +1147,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#E8E5DC',
+    borderColor: '#E2E8F0',
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
+    shadowOpacity: 0.03,
+    shadowRadius: 5,
     elevation: 2,
   },
   stepCardDone: {
-    backgroundColor: '#FAFAF7',
-    borderColor: '#EFECE6',
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
     opacity: 0.72,
   },
   stepCardHeader: {
@@ -1117,22 +1167,22 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   stepOrderPill: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#EBF6F0',
     paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 8,
   },
   stepOrderPillDone: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#E2E8F0',
   },
   stepOrderText: {
     fontFamily: 'Inter_700Bold',
     fontSize: 11,
-    color: '#20563F',
+    color: '#1C4D38',
     letterSpacing: 0.8,
   },
   stepOrderTextDone: {
-    color: '#6B7280',
+    color: '#64748B',
   },
   stepHeaderRight: {
     flexDirection: 'row',
@@ -1159,32 +1209,32 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E2E8F0',
   },
   stepCheckboxDone: {
-    backgroundColor: '#248A3D',
-    borderColor: '#248A3D',
+    backgroundColor: '#059669',
+    borderColor: '#059669',
   },
   stepBodyText: {
     fontFamily: 'Inter_400Regular',
     fontSize: 14.5,
-    color: '#1F2937',
+    color: '#1E293B',
     lineHeight: 23,
     letterSpacing: 0.1,
   },
   stepBodyTextDone: {
     textDecorationLine: 'line-through',
-    color: '#9CA3AF',
+    color: '#94A3B8',
   },
   cardBox: {
-    backgroundColor: Colors.background.card,
+    backgroundColor: '#FFFFFF',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: Colors.border.DEFAULT,
+    borderColor: '#E2E8F0',
     padding: 16,
   },
   tipsCard: {
@@ -1211,19 +1261,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#F5F3EC',
+    borderBottomColor: '#F1F5F9',
   },
   subSource: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 13,
-    color: Colors.primary.DEFAULT,
+    color: '#1C4D38',
     marginRight: 6,
   },
   subAlts: {
     flex: 1,
     fontFamily: 'Inter_400Regular',
     fontSize: 13,
-    color: Colors.text.DEFAULT,
+    color: '#334155',
   },
   allergenBox: {
     flexDirection: 'row',
@@ -1245,7 +1295,7 @@ const styles = StyleSheet.create({
   attributionBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F1E8',
+    backgroundColor: '#F1F5F9',
     borderRadius: 12,
     padding: 12,
     gap: 8,
@@ -1255,7 +1305,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: 'Inter_400Regular',
     fontSize: 11.5,
-    color: Colors.text.muted,
+    color: '#64748B',
   },
   relatedScroll: {
     paddingTop: 12,
@@ -1291,7 +1341,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: Colors.background.card,
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 14,
@@ -1299,7 +1349,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: Colors.border.DEFAULT,
+    borderTopColor: '#F1F5F9',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.08,
@@ -1334,11 +1384,11 @@ const styles = StyleSheet.create({
   swiggyDeliveryTag: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 10.5,
-    color: '#20563F',
+    color: '#1C4D38',
   },
   stickyCountText: {
     fontFamily: 'Poppins_600SemiBold',
     fontSize: 13,
-    color: Colors.text.DEFAULT,
+    color: '#0F172A',
   },
 });
