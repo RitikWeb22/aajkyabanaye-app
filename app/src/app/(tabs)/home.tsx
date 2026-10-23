@@ -24,7 +24,6 @@ import {
 import { RecipeCard } from '../../components/recipe/RecipeCard';
 import { FeaturedRecipeCard } from '../../components/recipe/FeaturedRecipeCard';
 import { AiRecipeModal } from '../../components/ai/AiRecipeModal';
-import { AdBanner } from '../../components/ads/AdBanner';
 import {
   useRecipes,
   useBanners,
@@ -285,16 +284,10 @@ export default function HomeScreen() {
         {/* ======================================================== */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <Text style={styles.greetingText}>
-                {greeting.text}, {displayName}
-              </Text>
-              <View style={styles.swiggyCoBrandBadge}>
-                <Ionicons name="flash" size={10} color="#FFFFFF" />
-                <Text style={styles.swiggyCoBrandText}>Powered by Swiggy</Text>
-              </View>
-            </View>
-            <Text style={styles.subGreetingText}>Aaj kya banega? • 10-Min Groceries</Text>
+            <Text style={styles.greetingText}>
+              {greeting.text}, {displayName} 👋
+            </Text>
+            <Text style={styles.subGreetingText}>Aaj kya banega? • Smart AI Cooking</Text>
           </View>
 
           <View style={styles.headerRight}>
@@ -372,6 +365,38 @@ export default function HomeScreen() {
           </Text>
           <View style={styles.filterButton}>
             <Ionicons name="options-outline" size={17} color="#20563F" />
+          </View>
+        </Pressable>
+
+        {/* ======================================================== */}
+        {/* SWIGGY INSTAMART SPOTLIGHT BANNER                        */}
+        {/* ======================================================== */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.swiggySpotlightCard,
+            pressed && styles.swiggySpotlightCardPressed,
+          ]}
+          onPress={() => router.push('/grocery-list')}
+          accessibilityRole="button"
+          accessibilityLabel="Powered by Swiggy Instamart - 10-Minute Grocery Delivery"
+        >
+          <View style={styles.swiggySpotlightIcon}>
+            <Ionicons name="flash" size={18} color="#FFFFFF" />
+          </View>
+          <View style={styles.swiggySpotlightBody}>
+            <View style={styles.swiggySpotlightHeader}>
+              <Text style={styles.swiggySpotlightBrand}>Powered by Swiggy</Text>
+              <View style={styles.swiggySpeedBadge}>
+                <Ionicons name="time" size={10} color="#FC8019" />
+                <Text style={styles.swiggySpeedText}>10 Mins</Text>
+              </View>
+            </View>
+            <Text style={styles.swiggySpotlightSub}>
+              Missing ingredients? Get spices & veggies delivered to your door in 10 mins!
+            </Text>
+          </View>
+          <View style={styles.swiggyChevronCircle}>
+            <Ionicons name="arrow-forward" size={14} color="#FC8019" />
           </View>
         </Pressable>
 
@@ -918,9 +943,6 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
-
-        {/* Google AdMob Banner */}
-        <AdBanner style={{ marginTop: 8, marginBottom: 16 }} />
       </ScrollView>
 
       {/* AI Recipe Generator Modal */}
@@ -972,25 +994,84 @@ const styles = StyleSheet.create({
     color: '#777D76',
     marginTop: 2,
   },
-  swiggyCoBrandBadge: {
+  swiggySpotlightCard: {
+    marginHorizontal: 16,
+    marginBottom: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#FED7AA',
+    padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#FC8019',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
+    gap: 12,
     shadowColor: '#FC8019',
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  swiggyCoBrandText: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 10.5,
-    color: '#FFFFFF',
-    letterSpacing: 0.1,
+  swiggySpotlightCardPressed: {
+    opacity: 0.92,
+    transform: [{ scale: 0.99 }],
+  },
+  swiggySpotlightIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#FC8019',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#FC8019',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  swiggySpotlightBody: {
+    flex: 1,
+  },
+  swiggySpotlightHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 3,
+  },
+  swiggySpotlightBrand: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 13.5,
+    color: '#1F2937',
+  },
+  swiggySpeedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#FFF7ED',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+  },
+  swiggySpeedText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 9.5,
+    color: '#C2410C',
+    letterSpacing: 0.2,
+  },
+  swiggySpotlightSub: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 11.5,
+    color: '#6B7280',
+    lineHeight: 16,
+  },
+  swiggyChevronCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFF7ED',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerRight: {
     flexDirection: 'row',

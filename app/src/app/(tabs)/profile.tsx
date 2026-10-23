@@ -22,8 +22,6 @@ import { useAppStore } from '../../store/useAppStore';
 import { apiClient } from '../../services/api/apiClient';
 import { useFavorites } from '../../hooks/useFavorites';
 import { useUserProfile } from '../../hooks/useUserProfile';
-import { AdBanner } from '../../components/ads/AdBanner';
-
 interface MenuItemProps {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
@@ -379,9 +377,6 @@ export default function ProfileScreen() {
             />
           </View>
         </View>
-
-        {/* Google AdMob Banner */}
-        <AdBanner style={{ marginTop: 12, marginBottom: 4 }} />
 
         {/* App Version Footer */}
         <View style={styles.footerWrapper}>

@@ -44,20 +44,8 @@ export function AdBanner({ unitId, style }: AdBannerProps) {
     };
   }, []);
 
-  // Web or native module error fallback
-  if (Platform.OS === 'web' || isError || !AdComponent) {
-    if (__DEV__) {
-      return (
-        <View style={[styles.devContainer, style]}>
-          <Text style={styles.devBadgeText}>📢 Google AdMob Banner Slot</Text>
-          <Text style={styles.devSubText}>Active on Android/iOS build (pub-1416168271239862)</Text>
-        </View>
-      );
-    }
-    return null;
-  }
-
-  // Use TestIds.BANNER in dev mode to prevent AdMob policy violations
+  // User requested to disable ad banners for clean premium UI
+  return null;
   const targetUnitId = __DEV__
     ? testBannerId
     : unitId || process.env.EXPO_PUBLIC_ADMOB_BANNER_ID || testBannerId;

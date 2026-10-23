@@ -45,6 +45,17 @@ import {
   ShoppingReviewItem,
 } from '../../components/shopping/ShoppingReviewSheet';
 import { useIsFavorite, useToggleFavorite } from '../../hooks/useFavorites';
+import { SmartCookingTimer } from '../../components/recipe/SmartCookingTimer';
+
+function extractStepMinutes(text: string): number | null {
+  const match = text.match(/(\d+)(?:\s*-\s*(\d+))?\s*(?:minutes|minute|mins|min)\b/i);
+  if (match) {
+    const lower = parseInt(match[1], 10);
+    const upper = match[2] ? parseInt(match[2], 10) : lower;
+    return Math.max(1, Math.round((lower + upper) / 2));
+  }
+  return null;
+}
 
 export default function RecipeDetailScreen() {
   const router = useRouter();
@@ -55,6 +66,17 @@ export default function RecipeDetailScreen() {
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [isShoppingSheetVisible, setIsShoppingSheetVisible] = useState(false);
+
+  // Smart Kitchen Timer State
+  const [isTimerVisible, setIsTimerVisible] = useState(false);
+  const [timerMinutes, setTimerMinutes] = useState(5);
+  const [timerStepLabel, setTimerStepLabel] = useState('Cooking Step');
+
+  const handleOpenTimer = (minutes: number = 5, label: string = 'Cooking Step') => {
+    setTimerMinutes(minutes);
+    setTimerStepLabel(label);
+    setIsTimerVisible(true);
+  };
 
   // Queries
   const {
@@ -480,9 +502,9 @@ export default function RecipeDetailScreen() {
             <View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 <Text style={styles.sectionTitle}>Ingredient Checklist</Text>
-                <View style={styles.swiggyCoBrandBadge}>
+                <View style={styles.swiggyBrandBadge}>
                   <Ionicons name="flash" size={9} color="#FFFFFF" />
-                  <Text style={styles.swiggyCoBrandText}>Powered by Swiggy</Text>
+                  <Text style={styles.swiggyBrandText}>Powered by Swiggy</Text>
                 </View>
               </View>
               <Text style={styles.sectionSubtitle}>
@@ -551,18 +573,28 @@ export default function RecipeDetailScreen() {
           <View style={styles.sectionHeader}>
             <View>
               <Text style={styles.sectionTitle}>Cooking Instructions</Text>
-              <Text style={styles.sectionSubtitle}>Tap any step to mark as completed</Text>
+              <Text style={styles.sectionSubtitle}>Tap steps to complete • Smart timers</Text>
             </View>
-            {completedStepCount > 0 && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Pressable
-                onPress={() => recipeId && resetStepsDone(recipeId)}
+                onPress={() => handleOpenTimer(5, 'Kitchen Timer')}
                 hitSlop={8}
-                style={styles.resetStepsBtn}
+                style={styles.openTimerHeaderBtn}
               >
-                <Ionicons name="refresh" size={12} color={Colors.text.muted} />
-                <Text style={styles.resetStepsText}>Reset</Text>
+                <Ionicons name="stopwatch" size={13} color="#20563F" />
+                <Text style={styles.openTimerHeaderText}>Timer</Text>
               </Pressable>
-            )}
+              {completedStepCount > 0 && (
+                <Pressable
+                  onPress={() => recipeId && resetStepsDone(recipeId)}
+                  hitSlop={8}
+                  style={styles.resetStepsBtn}
+                >
+                  <Ionicons name="refresh" size={12} color={Colors.text.muted} />
+                  <Text style={styles.resetStepsText}>Reset</Text>
+                </Pressable>
+              )}
+            </View>
           </View>
 
           {/* Cooking Progress Bar */}
@@ -578,28 +610,57 @@ export default function RecipeDetailScreen() {
             </View>
           </View>
 
-          {/* Steps List */}
-          <View style={styles.cardBox}>
+          {/* MasterChef Step Cards List (Cleanly Aligned) */}
+          <View style={styles.stepsContainer}>
             {recipe.steps.map((step) => {
               const isDone = completedSteps.includes(step.order);
+              const stepMins = extractStepMinutes(step.text);
 
               return (
-                <Pressable
+                <View
                   key={step.order}
-                  style={[styles.interactiveStepRow, isDone && styles.interactiveStepRowDone]}
-                  onPress={() => recipeId && toggleStepDone(recipeId, step.order)}
+                  style={[styles.stepCard, isDone && styles.stepCardDone]}
                 >
-                  <View style={[styles.stepNumberBadge, isDone && styles.stepNumberBadgeDone]}>
-                    {isDone ? (
-                      <Ionicons name="checkmark" size={15} color="#FFFFFF" />
-                    ) : (
-                      <Text style={styles.stepNumberText}>{step.order}</Text>
-                    )}
+                  <View style={styles.stepCardHeader}>
+                    <View style={[styles.stepOrderPill, isDone && styles.stepOrderPillDone]}>
+                      <Text style={[styles.stepOrderText, isDone && styles.stepOrderTextDone]}>
+                        STEP {String(step.order).padStart(2, '0')}
+                      </Text>
+                    </View>
+
+                    <View style={styles.stepHeaderRight}>
+                      {stepMins ? (
+                        <Pressable
+                          style={styles.stepTimerBtn}
+                          onPress={() => handleOpenTimer(stepMins, `Step ${step.order} Timer`)}
+                          hitSlop={6}
+                        >
+                          <Ionicons name="stopwatch-outline" size={13} color="#20563F" />
+                          <Text style={styles.stepTimerBtnText}>{stepMins} min timer</Text>
+                        </Pressable>
+                      ) : null}
+
+                      <Pressable
+                        style={[styles.stepCheckbox, isDone && styles.stepCheckboxDone]}
+                        onPress={() => recipeId && toggleStepDone(recipeId, step.order)}
+                        hitSlop={8}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: isDone }}
+                        accessibilityLabel={`Mark step ${step.order} completed`}
+                      >
+                        <Ionicons
+                          name={isDone ? 'checkmark' : 'ellipse-outline'}
+                          size={15}
+                          color={isDone ? '#FFFFFF' : '#9CA3AF'}
+                        />
+                      </Pressable>
+                    </View>
                   </View>
-                  <Text style={[styles.stepText, isDone && styles.stepTextDone]}>
+
+                  <Text style={[styles.stepBodyText, isDone && styles.stepBodyTextDone]}>
                     {step.text}
                   </Text>
-                </Pressable>
+                </View>
               );
             })}
           </View>
@@ -711,31 +772,31 @@ export default function RecipeDetailScreen() {
         ]}
       >
         <View style={styles.stickyInfo}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <Text style={styles.stickyCountText}>
-              {selectedCount > 0 ? `${selectedCount} items selected` : 'No items selected'}
-            </Text>
-            <View style={styles.swiggyCoBrandBadge}>
-              <Ionicons name="flash" size={9} color="#FFFFFF" />
-              <Text style={styles.swiggyCoBrandText}>Powered by Swiggy</Text>
+          <View style={styles.swiggyRow}>
+            <View style={styles.swiggyBrandBadge}>
+              <Ionicons name="flash" size={10} color="#FFFFFF" />
+              <Text style={styles.swiggyBrandText}>Powered by Swiggy</Text>
             </View>
+            <Text style={styles.swiggyDeliveryTag}>⚡ 10-Min Instamart</Text>
           </View>
-          <Text style={styles.stickySubtext}>
-            {selectedCount > 0 ? `10-min delivery • ${currentServings} servings` : 'Check items you need'}
+          <Text style={styles.stickyCountText}>
+            {selectedCount > 0
+              ? `${selectedCount} item${selectedCount > 1 ? 's' : ''} ready to order`
+              : 'Select ingredients you need'}
           </Text>
         </View>
 
         <Button
           title={
             selectedCount === 0
-              ? 'Select Ingredients'
-              : `Shop Ingredients (${selectedCount}) →`
+              ? 'Select Items'
+              : `Order on Swiggy (${selectedCount})`
           }
           onPress={handleShopSelected}
           disabled={selectedCount === 0}
           variant="primary"
           size="md"
-          icon={<Ionicons name="cart-outline" size={17} color="#FFFFFF" />}
+          icon={<Ionicons name="bag-handle-outline" size={17} color="#FFFFFF" />}
         />
       </View>
 
@@ -751,6 +812,17 @@ export default function RecipeDetailScreen() {
             const remainingIds = updatedItems.map((i) => i.id);
             useAppStore.getState().setSelectedIngredients(recipeId, remainingIds);
           }
+        }}
+      />
+
+      {/* Smart Cooking Timer Clock Modal & Floating Indicator */}
+      <SmartCookingTimer
+        visible={isTimerVisible}
+        initialMinutes={timerMinutes}
+        stepLabel={timerStepLabel}
+        onClose={() => setIsTimerVisible(false)}
+        onTimerComplete={(label) => {
+          Alert.alert('Timer Finished! 🍲', `${label || 'Your cooking step'} is complete! Time to check your pot.`);
         }}
       />
     </SafeAreaView>
@@ -1001,50 +1073,119 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: Colors.text.muted,
   },
+  openTimerHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    backgroundColor: '#EAF5EC',
+    borderWidth: 1,
+    borderColor: '#C3E6CB',
+  },
+  openTimerHeaderText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 12,
+    color: '#20563F',
+  },
+  stepsContainer: {
+    marginTop: 10,
+    gap: 12,
+  },
+  stepCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E8E5DC',
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  stepCardDone: {
+    backgroundColor: '#FAFAF7',
+    borderColor: '#EFECE6',
+    opacity: 0.72,
+  },
+  stepCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  stepOrderPill: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  stepOrderPillDone: {
+    backgroundColor: '#E5E7EB',
+  },
+  stepOrderText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 11,
+    color: '#20563F',
+    letterSpacing: 0.8,
+  },
+  stepOrderTextDone: {
+    color: '#6B7280',
+  },
+  stepHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  stepTimerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 10,
+  },
+  stepTimerBtnText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 11,
+    color: '#C2410C',
+  },
+  stepCheckbox: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  stepCheckboxDone: {
+    backgroundColor: '#248A3D',
+    borderColor: '#248A3D',
+  },
+  stepBodyText: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14.5,
+    color: '#1F2937',
+    lineHeight: 23,
+    letterSpacing: 0.1,
+  },
+  stepBodyTextDone: {
+    textDecorationLine: 'line-through',
+    color: '#9CA3AF',
+  },
   cardBox: {
     backgroundColor: Colors.background.card,
     borderRadius: 18,
     borderWidth: 1,
     borderColor: Colors.border.DEFAULT,
     padding: 16,
-  },
-  interactiveStepRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 14,
-    paddingVertical: 4,
-  },
-  interactiveStepRowDone: {
-    opacity: 0.65,
-  },
-  stepNumberBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#EAF5EC',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-    marginTop: 2,
-  },
-  stepNumberBadgeDone: {
-    backgroundColor: '#248A3D',
-  },
-  stepNumberText: {
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 12,
-    color: Colors.primary.DEFAULT,
-  },
-  stepText: {
-    flex: 1,
-    fontFamily: 'Inter_400Regular',
-    fontSize: 14,
-    color: Colors.text.DEFAULT,
-    lineHeight: 22,
-  },
-  stepTextDone: {
-    textDecorationLine: 'line-through',
-    color: Colors.text.muted,
   },
   tipsCard: {
     backgroundColor: '#FFFBEB',
@@ -1169,29 +1310,35 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
   },
-  stickyCountText: {
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 14,
-    color: Colors.text.DEFAULT,
+  swiggyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 3,
   },
-  stickySubtext: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 11,
-    color: Colors.text.muted,
-  },
-  swiggyCoBrandBadge: {
+  swiggyBrandBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3.5,
     backgroundColor: '#FC8019',
     paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 999,
+    paddingVertical: 2.5,
+    borderRadius: 6,
   },
-  swiggyCoBrandText: {
+  swiggyBrandText: {
     fontFamily: 'Inter_700Bold',
     fontSize: 9.5,
     color: '#FFFFFF',
-    letterSpacing: 0.1,
+    letterSpacing: 0.2,
+  },
+  swiggyDeliveryTag: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 10.5,
+    color: '#20563F',
+  },
+  stickyCountText: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 13,
+    color: Colors.text.DEFAULT,
   },
 });
