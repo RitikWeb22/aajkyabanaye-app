@@ -33,7 +33,7 @@ const SLIDES: SlideData[] = [
     titleLine2: 'banega?',
     rayColor: '#F59E0B', // Saffron golden rays
     subtitle: 'Your AI-powered cooking assistant for easy, tasty and healthy meals.',
-    image: require('../../assets/images/onboarding-1.png'),
+    image: require('../../assets/images/on-1.png'),
   },
   {
     id: '2',
@@ -42,7 +42,7 @@ const SLIDES: SlideData[] = [
     titleLine2: 'what you have',
     rayColor: '#10B981', // Fresh herb green rays
     subtitle: "Tell us what's in your pantry, get personalized recipes instantly.",
-    image: require('../../assets/images/onboarding-2.png'),
+    image: require('../../assets/images/on-2.png'),
   },
   {
     id: '3',
@@ -51,7 +51,7 @@ const SLIDES: SlideData[] = [
     titleLine2: 'Get it Delivered.',
     rayColor: '#F59E0B', // Saffron golden rays
     subtitle: 'Save your meals, plan your week and get ingredients from Instamart with one tap.',
-    image: require('../../assets/images/onboarding-3.png'),
+    image: require('../../assets/images/on-3.png'),
   },
 ];
 
@@ -69,7 +69,7 @@ function SparkleRays({ color }: { color: string }) {
 export default function OnboardingScreen() {
   const router = useRouter();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
-  const slideWidth = Math.min(windowWidth, 440);
+  const slideWidth = Math.min(windowWidth, 480);
   const setHasCompletedOnboarding = useAppStore((s) => s.setHasCompletedOnboarding);
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -224,8 +224,8 @@ export default function OnboardingScreen() {
 
   const isLast = currentIndex === SLIDES.length - 1;
 
-  // Dynamic illustration max height based on available screen height
-  const illustrationMaxHeight = Math.min(windowHeight * 0.44, 360);
+  // Dynamic illustration max height based on available screen height (expanded for prominent presentation)
+  const illustrationMaxHeight = Math.min(windowHeight * 0.50, 440);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
   },
   slideItem: {
     flex: 1,
-    paddingHorizontal: 28,
+    paddingHorizontal: 20,
     justifyContent: 'space-between',
   },
   topContentGroup: {
@@ -439,11 +439,11 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   screenBrandLogo: {
-    width: 130,
-    height: 70,
+    width: 145,
+    height: 78,
   },
   headingContainer: {
     marginTop: 2,
@@ -503,23 +503,25 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#556358',
     lineHeight: 22,
-    marginTop: 10,
-    maxWidth: 340,
+    marginTop: 8,
+    maxWidth: 360,
   },
   imageContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
   imageAnimatedWrapper: {
     width: '100%',
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
   },
   heroIllustration: {
     width: '100%',
+    height: '100%',
   },
   bottomArea: {
     paddingHorizontal: 26,
