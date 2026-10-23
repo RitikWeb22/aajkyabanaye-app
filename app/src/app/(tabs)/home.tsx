@@ -957,7 +957,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFBF1',
+    backgroundColor: '#F8FAFC',
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -985,20 +985,20 @@ const styles = StyleSheet.create({
   greetingText: {
     fontFamily: 'Poppins_700Bold',
     fontSize: 21,
-    color: '#252821',
-    letterSpacing: -0.3,
+    color: '#0F172A',
+    letterSpacing: -0.4,
   },
   subGreetingText: {
     fontFamily: 'Inter_500Medium',
-    fontSize: 13.5,
-    color: '#777D76',
+    fontSize: 13,
+    color: '#64748B',
     marginTop: 2,
   },
   swiggySpotlightCard: {
-    marginHorizontal: 16,
+    width: '100%',
     marginBottom: 20,
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 18,
     borderWidth: 1.5,
     borderColor: '#FED7AA',
     padding: 14,
@@ -1040,7 +1040,7 @@ const styles = StyleSheet.create({
   swiggySpotlightBrand: {
     fontFamily: 'Poppins_600SemiBold',
     fontSize: 13.5,
-    color: '#1F2937',
+    color: '#0F172A',
   },
   swiggySpeedBadge: {
     flexDirection: 'row',
@@ -1062,7 +1062,7 @@ const styles = StyleSheet.create({
   swiggySpotlightSub: {
     fontFamily: 'Inter_400Regular',
     fontSize: 11.5,
-    color: '#6B7280',
+    color: '#64748B',
     lineHeight: 16,
   },
   swiggyChevronCircle: {
@@ -1086,7 +1086,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E8E5DC',
+    borderColor: '#E2E8F0',
     position: 'relative',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1102,7 +1102,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -2,
     right: -2,
-    backgroundColor: '#D94B45',
+    backgroundColor: '#EF4444',
     minWidth: 18,
     height: 18,
     borderRadius: 9,
@@ -1123,7 +1123,7 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     overflow: 'hidden',
     borderWidth: 1.5,
-    borderColor: '#20563F',
+    borderColor: '#1C4D38',
   },
   avatarImage: {
     width: '100%',
@@ -1132,7 +1132,7 @@ const styles = StyleSheet.create({
   avatarFallback: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#20563F',
+    backgroundColor: '#1C4D38',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1149,19 +1149,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E8E5DC',
+    borderColor: '#E2E8F0',
     paddingHorizontal: 14,
     height: 48,
-    marginBottom: 18,
-    shadowColor: '#20563F',
+    marginBottom: 16,
+    shadowColor: '#1C4D38',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
     elevation: 2,
   },
   searchBarPressed: {
-    borderColor: '#20563F',
-    backgroundColor: '#FAF8F2',
+    borderColor: '#1C4D38',
+    backgroundColor: '#FAFCFA',
   },
   searchIcon: {
     marginRight: 10,
@@ -1169,14 +1169,14 @@ const styles = StyleSheet.create({
   searchPlaceholder: {
     flex: 1,
     fontFamily: 'Inter_400Regular',
-    fontSize: 14,
-    color: '#777D76',
+    fontSize: 13.5,
+    color: '#64748B',
   },
   filterButton: {
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: '#F3EFE6',
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1188,7 +1188,7 @@ const styles = StyleSheet.create({
   quickStartHeader: {
     fontFamily: 'Poppins_600SemiBold',
     fontSize: 15,
-    color: '#252821',
+    color: '#0F172A',
     marginBottom: 10,
     letterSpacing: -0.2,
   },
@@ -1206,7 +1206,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0, 0, 0, 0.05)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.03,
     shadowRadius: 5,
     elevation: 2,
   },
@@ -1225,13 +1225,13 @@ const styles = StyleSheet.create({
   tileTitle: {
     fontFamily: 'Poppins_600SemiBold',
     fontSize: 13.5,
-    color: '#252821',
+    color: '#0F172A',
     marginBottom: 1,
   },
   tileSubtitle: {
     fontFamily: 'Inter_400Regular',
     fontSize: 11,
-    color: '#777D76',
+    color: '#64748B',
   },
 
   /* D. Featured Recipe Skeleton */
@@ -1255,12 +1255,12 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E8E5DC',
+    borderColor: '#E2E8F0',
     gap: 6,
   },
   dietPillSelected: {
-    backgroundColor: '#20563F',
-    borderColor: '#20563F',
+    backgroundColor: '#1C4D38',
+    borderColor: '#1C4D38',
   },
   dietPillPressed: {
     opacity: 0.9,
@@ -1272,7 +1272,7 @@ const styles = StyleSheet.create({
   dietPillText: {
     fontFamily: 'Inter_500Medium',
     fontSize: 13,
-    color: '#252821',
+    color: '#334155',
   },
   dietPillTextSelected: {
     fontFamily: 'Inter_600SemiBold',
@@ -1292,24 +1292,24 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: 'Poppins_600SemiBold',
     fontSize: 17,
-    color: '#252821',
-    letterSpacing: -0.2,
+    color: '#0F172A',
+    letterSpacing: -0.3,
   },
   sectionSubtitle: {
     fontFamily: 'Inter_400Regular',
     fontSize: 12,
-    color: '#777D76',
+    color: '#64748B',
     marginTop: 1,
   },
   seeAllText: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 13,
-    color: '#20563F',
+    color: '#1C4D38',
   },
   clearHistoryText: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 13,
-    color: '#D94B45',
+    color: '#EF4444',
   },
 
   /* F. Categories */
@@ -1328,7 +1328,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0,0,0,0.04)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.03,
     shadowRadius: 3,
     elevation: 1,
   },
@@ -1347,7 +1347,7 @@ const styles = StyleSheet.create({
   categoryName: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 11,
-    color: '#252821',
+    color: '#0F172A',
     textAlign: 'center',
   },
 
@@ -1362,7 +1362,7 @@ const styles = StyleSheet.create({
 
   /* H. AI Recipe Studio Card */
   aiStudioCard: {
-    backgroundColor: '#F3EEFF',
+    backgroundColor: '#F5F3FF',
     borderRadius: 22,
     padding: 16,
     flexDirection: 'row',
@@ -1451,7 +1451,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#E8E5DC',
+    borderColor: '#E2E8F0',
     padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1465,7 +1465,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#F3EFE6',
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
@@ -1473,14 +1473,14 @@ const styles = StyleSheet.create({
   recentEmptyTitle: {
     fontFamily: 'Poppins_600SemiBold',
     fontSize: 14,
-    color: '#252821',
+    color: '#0F172A',
     textAlign: 'center',
     marginBottom: 4,
   },
   recentEmptySubtitle: {
     fontFamily: 'Inter_400Regular',
     fontSize: 12,
-    color: '#777D76',
+    color: '#64748B',
     textAlign: 'center',
     lineHeight: 17,
     maxWidth: 290,
