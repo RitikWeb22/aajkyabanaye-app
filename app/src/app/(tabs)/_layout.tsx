@@ -25,7 +25,7 @@ const TAB_CONFIG: Record<
   search: {
     focusedIcon: 'search',
     outlineIcon: 'search-outline',
-    label: 'AI Chef',
+    label: 'Search',
   },
   'meal-planner': {
     focusedIcon: 'calendar',
@@ -150,7 +150,7 @@ export default function TabLayout() {
     >
       <Tabs.Screen name="home" options={{ title: 'Home' }} />
       <Tabs.Screen name="discover" options={{ title: 'Discover' }} />
-      <Tabs.Screen name="search" options={{ title: 'AI Chef' }} />
+      <Tabs.Screen name="search" options={{ title: 'Search' }} />
       <Tabs.Screen name="meal-planner" options={{ title: 'Meal Plan' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
     </Tabs>
