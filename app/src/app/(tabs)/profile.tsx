@@ -22,6 +22,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { apiClient } from '../../services/api/apiClient';
 import { useFavorites } from '../../hooks/useFavorites';
 import { useUserProfile } from '../../hooks/useUserProfile';
+
 interface MenuItemProps {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
@@ -30,6 +31,8 @@ interface MenuItemProps {
   badge?: string;
   isDestructive?: boolean;
   isLast?: boolean;
+  iconColor?: string;
+  iconBg?: string;
 }
 
 function MenuItem({
@@ -40,7 +43,16 @@ function MenuItem({
   badge,
   isDestructive = false,
   isLast = false,
+  iconColor,
+  iconBg,
 }: MenuItemProps) {
+  const finalIconColor = isDestructive
+    ? Colors.error.DEFAULT
+    : iconColor || '#1C4D38';
+  const finalIconBg = isDestructive
+    ? '#FEE2E2'
+    : iconBg || '#EBF6F0';
+
   return (
     <Pressable
       onPress={onPress}
@@ -53,17 +65,8 @@ function MenuItem({
       accessibilityRole="button"
       accessibilityLabel={`${title}${subtitle ? `, ${subtitle}` : ''}`}
     >
-      <View
-        style={[
-          styles.menuIconCircle,
-          isDestructive && styles.menuIconCircleDestructive,
-        ]}
-      >
-        <Ionicons
-          name={icon}
-          size={19}
-          color={isDestructive ? Colors.error.DEFAULT : Colors.primary.DEFAULT}
-        />
+      <View style={[styles.menuIconCircle, { backgroundColor: finalIconBg }]}>
+        <Ionicons name={icon} size={18} color={finalIconColor} />
       </View>
 
       <View style={styles.menuTextCol}>
@@ -86,7 +89,7 @@ function MenuItem({
         </View>
       )}
 
-      <Ionicons name="chevron-forward" size={17} color={Colors.text.muted} />
+      <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
     </Pressable>
   );
 }
@@ -140,7 +143,11 @@ export default function ProfileScreen() {
   };
 
   const confirmSignOut = () => {
-    if (Alert?.alert) {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm('Are you sure you want to sign out of AajKyaBanaye?')) {
+        handleSignOut();
+      }
+    } else {
       Alert.alert(
         'Sign Out',
         'Are you sure you want to sign out of AajKyaBanaye?',
@@ -149,8 +156,6 @@ export default function ProfileScreen() {
           { text: 'Sign Out', style: 'destructive', onPress: handleSignOut },
         ]
       );
-    } else {
-      handleSignOut();
     }
   };
 
@@ -179,211 +184,280 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* 2. Profile Header Card */}
+        {/* 1. Profile Header Hero Card */}
         <View style={styles.profileCard}>
-          {/* Avatar with Edit Badge */}
-          <Pressable
-            onPress={() => router.push('/edit-profile')}
-            style={({ pressed }) => [
-              styles.avatarContainer,
-              pressed && { opacity: 0.88 },
-              Platform.OS === 'web' && ({ cursor: 'pointer' } as any),
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Edit profile picture"
-          >
-            {effectiveAvatarUrl ? (
-              <Image
-                source={{ uri: effectiveAvatarUrl }}
-                style={styles.avatarImage}
-                contentFit="cover"
-                transition={200}
-              />
-            ) : (
-              <View style={styles.avatarCircle}>
-                <Ionicons name="person" size={38} color={Colors.primary.DEFAULT} />
-              </View>
-            )}
-            <View style={styles.avatarEditBadge}>
-              <Ionicons name="pencil" size={12} color="#FFFFFF" />
-            </View>
-          </Pressable>
-
-          {/* User Name & Quick Edit Action */}
-          <View style={styles.nameRow}>
-            <Text style={styles.userName} numberOfLines={1}>
-              {displayName}
-            </Text>
+          <View style={styles.profileCardTop}>
+            {/* Avatar with Camera/Edit Badge */}
             <Pressable
               onPress={() => router.push('/edit-profile')}
               style={({ pressed }) => [
-                styles.editPencilBtn,
-                pressed && { opacity: 0.75 },
+                styles.avatarContainer,
+                pressed && { opacity: 0.88 },
                 Platform.OS === 'web' && ({ cursor: 'pointer' } as any),
               ]}
               accessibilityRole="button"
-              accessibilityLabel="Edit Profile"
+              accessibilityLabel="Edit profile picture"
+            >
+              {effectiveAvatarUrl ? (
+                <Image
+                  source={{ uri: effectiveAvatarUrl }}
+                  style={styles.avatarImage}
+                  contentFit="cover"
+                  transition={200}
+                />
+              ) : (
+                <View style={styles.avatarCircle}>
+                  <Ionicons name="person" size={38} color="#1C4D38" />
+                </View>
+              )}
+              <View style={styles.avatarEditBadge}>
+                <Ionicons name="camera" size={12} color="#FFFFFF" />
+              </View>
+            </Pressable>
+
+            {/* Name & Chef Level */}
+            <View style={styles.nameSection}>
+              <View style={styles.nameRow}>
+                <Text style={styles.userName} numberOfLines={1}>
+                  {displayName}
+                </Text>
+                <View style={styles.chefBadge}>
+                  <Ionicons name="sparkles" size={10} color="#059669" />
+                  <Text style={styles.chefBadgeText}>{isSignedIn ? 'Chef' : 'Guest'}</Text>
+                </View>
+              </View>
+
+              <Text style={styles.userEmail} numberOfLines={1}>
+                {emailDisplay}
+              </Text>
+
+              {phoneDisplay ? (
+                <View style={styles.phoneRow}>
+                  <Ionicons name="call-outline" size={11} color="#64748B" />
+                  <Text style={styles.phoneText}>{phoneDisplay}</Text>
+                </View>
+              ) : null}
+            </View>
+
+            {/* Edit Profile Touch Target */}
+            <Pressable
+              onPress={() => router.push('/edit-profile')}
+              style={({ pressed }) => [
+                styles.editProfileBtn,
+                pressed && { opacity: 0.8 },
+                Platform.OS === 'web' && ({ cursor: 'pointer' } as any),
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Edit profile details"
               hitSlop={8}
             >
-              <Ionicons name="create-outline" size={14} color="#1C4D38" />
-              <Text style={styles.editPencilText}>Edit</Text>
+              <Ionicons name="pencil" size={14} color="#1C4D38" />
             </Pressable>
           </View>
 
-          {/* Email / Sign In Prompt */}
-          <Text style={styles.userEmail} numberOfLines={2}>
-            {emailDisplay}
-          </Text>
+          {/* Quick Metrics Bar */}
+          <View style={styles.metricsBar}>
+            <Pressable
+              style={styles.metricItem}
+              onPress={() => router.push('/favorites')}
+              accessibilityRole="button"
+            >
+              <Text style={styles.metricNumber}>{favorites?.length || 0}</Text>
+              <Text style={styles.metricLabel}>Favorites</Text>
+            </Pressable>
 
-          {/* Phone Display (if available) */}
-          {phoneDisplay ? (
-            <View style={styles.phoneRow}>
-              <Ionicons name="call-outline" size={13} color={Colors.text.muted} />
-              <Text style={styles.phoneText}>{phoneDisplay}</Text>
+            <View style={styles.metricDivider} />
+
+            <Pressable
+              style={styles.metricItem}
+              onPress={() => router.push('/diet-preferences')}
+              accessibilityRole="button"
+            >
+              <Text style={styles.metricNumber} numberOfLines={1}>
+                {primaryDiet.length > 9 ? `${primaryDiet.slice(0, 8)}...` : primaryDiet}
+              </Text>
+              <Text style={styles.metricLabel}>Diet</Text>
+            </Pressable>
+
+            <View style={styles.metricDivider} />
+
+            <Pressable
+              style={styles.metricItem}
+              onPress={() => router.push('/diet-preferences')}
+              accessibilityRole="button"
+            >
+              <Text style={styles.metricNumber} numberOfLines={1}>
+                {primaryCuisine.length > 9 ? `${primaryCuisine.slice(0, 8)}...` : primaryCuisine}
+              </Text>
+              <Text style={styles.metricLabel}>Cuisine</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* 2. Kitchen DNA & Taste Profile Card */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.tasteDnaCard,
+            pressed && { opacity: 0.94 },
+            Platform.OS === 'web' && ({ cursor: 'pointer' } as any),
+          ]}
+          onPress={() => router.push('/diet-preferences')}
+          accessibilityRole="button"
+          accessibilityLabel="Adjust Taste DNA Preferences"
+        >
+          <View style={styles.tasteDnaHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="restaurant-outline" size={16} color="#1C4D38" />
+              <Text style={styles.tasteDnaTitle}>Your Kitchen DNA</Text>
             </View>
-          ) : null}
+            <View style={styles.tunePill}>
+              <Text style={styles.tunePillText}>Tune</Text>
+              <Ionicons name="chevron-forward" size={12} color="#1C4D38" />
+            </View>
+          </View>
 
-          {/* Kitchen Preference Badges */}
-          <Pressable
-            onPress={() => router.push('/diet-preferences')}
-            style={({ pressed }) => [
-              styles.dietTagsRow,
-              pressed && { opacity: 0.8 },
-              Platform.OS === 'web' && ({ cursor: 'pointer' } as any),
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Edit diet and cuisine preferences"
-          >
+          <View style={styles.dietTagsRow}>
             <Badge type={isVeg ? 'veg' : 'nonVeg'} />
             <Badge label={primaryDiet} />
             <Badge label={primaryCuisine} />
             {spiceLevel ? <Badge label={`${spiceLevel} Spice`} /> : null}
-          </Pressable>
+          </View>
+        </Pressable>
 
-          {/* 3. Account Actions: Sign Out vs Guest Auth */}
-          {isSignedIn ? (
-            <View style={styles.actionBtnRow}>
-              <Button
-                title="Sign Out"
-                onPress={confirmSignOut}
-                loading={isSigningOut}
-                disabled={isSigningOut}
-                variant="outline"
-                size="md"
-                fullWidth
-                style={styles.signOutBtn}
-                icon={
-                  <Ionicons
-                    name="log-out-outline"
-                    size={17}
-                    color={Colors.error.DEFAULT}
-                  />
-                }
-              />
-            </View>
-          ) : (
-            <View style={styles.authBtnGroup}>
-              <Button
-                title="Sign In"
-                onPress={() => router.push('/(auth)/sign-in')}
-                variant="primary"
-                size="md"
-                style={{ flex: 1, marginRight: 8 }}
-                icon={<Ionicons name="log-in-outline" size={18} color="#FFFFFF" />}
-              />
-              <Button
-                title="Create Account"
-                onPress={() => router.push('/(auth)/sign-up')}
-                variant="outline"
-                size="md"
-                style={{ flex: 1 }}
-              />
-            </View>
-          )}
-        </View>
-
-        {/* 4. Menu Section 1: Account & Kitchen Profile */}
+        {/* 3. Menu Section: Kitchen & Recipes */}
         <View style={styles.menuSection}>
-          <Text style={styles.groupHeading}>Account & Kitchen Profile</Text>
+          <Text style={styles.groupHeading}>Kitchen & Cooking</Text>
           <View style={styles.menuGroup}>
             <MenuItem
-              icon="person-circle-outline"
-              title="Edit Profile"
-              subtitle="Update name, display details & bio"
-              onPress={() => router.push('/edit-profile')}
+              icon="heart"
+              title="Saved Favorites"
+              subtitle="Recipes you love and want to cook again"
+              badge={
+                favorites && favorites.length > 0
+                  ? String(favorites.length)
+                  : undefined
+              }
+              iconColor="#E11D48"
+              iconBg="#FFE4E6"
+              onPress={() => router.push('/favorites')}
             />
             <MenuItem
-              icon="nutrition-outline"
+              icon="cart"
+              title="My Grocery Lists"
+              subtitle="Pantry shopping items & meal plan lists"
+              iconColor="#16A34A"
+              iconBg="#DCFCE7"
+              onPress={() => router.push('/grocery-list')}
+            />
+            <MenuItem
+              icon="options"
               title="Diet & Cuisine Preferences"
-              subtitle={`${primaryDiet} • ${favoriteCuisines.slice(0, 2).join(', ')}${
-                favoriteCuisines.length > 2 ? '...' : ''
-              }`}
+              subtitle={`${primaryDiet} • ${favoriteCuisines.slice(0, 2).join(', ')}`}
+              iconColor="#D97706"
+              iconBg="#FEF3C7"
               onPress={() => router.push('/diet-preferences')}
               isLast
             />
           </View>
         </View>
 
-        {/* 4. Menu Section 2: Personal Kitchen */}
+        {/* 4. Menu Section: Account & App Settings */}
         <View style={styles.menuSection}>
-          <Text style={styles.groupHeading}>Personal Kitchen</Text>
+          <Text style={styles.groupHeading}>Account & App</Text>
           <View style={styles.menuGroup}>
             <MenuItem
-              icon="heart-outline"
-              title="Saved Favorites"
-              subtitle="Recipes you love"
-              badge={
-                favorites && favorites.length > 0
-                  ? String(favorites.length)
-                  : undefined
-              }
-              onPress={() => router.push('/favorites')}
+              icon="person-circle"
+              title="Edit Profile"
+              subtitle="Update display name, avatar & details"
+              iconColor="#2563EB"
+              iconBg="#DBEAFE"
+              onPress={() => router.push('/edit-profile')}
             />
             <MenuItem
-              icon="cart-outline"
-              title="My Grocery Lists"
-              subtitle="Pantry shopping items & meal plan lists"
-              onPress={() => router.push('/grocery-list')}
-              isLast
-            />
-          </View>
-        </View>
-
-        {/* 4. Menu Section 3: Preferences & Help */}
-        <View style={styles.menuSection}>
-          <Text style={styles.groupHeading}>Preferences & Help</Text>
-          <View style={styles.menuGroup}>
-            <MenuItem
-              icon="refresh-outline"
+              icon="sparkles"
               title="Replay Onboarding Tour"
-              subtitle="Review features and introduction"
+              subtitle="Explore smart kitchen & timer features"
+              iconColor="#7C3AED"
+              iconBg="#EDE9FE"
               onPress={() => {
                 setHasCompletedOnboarding(false);
                 router.push('/onboarding');
               }}
             />
             <MenuItem
-              icon="document-text-outline"
+              icon="document-text"
               title="Terms of Service"
               subtitle="User agreement & culinary terms"
+              iconColor="#475569"
+              iconBg="#F1F5F9"
               onPress={() => router.push('/terms')}
             />
             <MenuItem
-              icon="shield-checkmark-outline"
+              icon="shield-checkmark"
               title="Privacy Policy"
-              subtitle="Data protection & your rights"
+              subtitle="Data protection & food privacy rights"
+              iconColor="#059669"
+              iconBg="#EBF6F0"
               onPress={() => router.push('/privacy')}
               isLast
             />
           </View>
         </View>
 
-        {/* App Version Footer */}
+        {/* 5. Auth / Sign Out Section */}
+        {isSignedIn ? (
+          <View style={styles.actionBtnRow}>
+            <Pressable
+              onPress={confirmSignOut}
+              disabled={isSigningOut}
+              style={({ pressed }) => [
+                styles.signOutPressable,
+                pressed && { opacity: 0.8 },
+                Platform.OS === 'web' && ({ cursor: 'pointer' } as any),
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Sign Out"
+            >
+              <Ionicons name="log-out-outline" size={17} color="#DC2626" />
+              <Text style={styles.signOutText}>
+                {isSigningOut ? 'Signing out...' : 'Sign Out'}
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.authBanner}>
+            <View style={styles.authBannerTextCol}>
+              <Text style={styles.authBannerTitle}>Unlock Full Experience</Text>
+              <Text style={styles.authBannerSub}>
+                Sign in to sync your weekly meal plans and darkstore carts across devices.
+              </Text>
+            </View>
+            <View style={styles.authBannerBtns}>
+              <Button
+                title="Sign In"
+                onPress={() => router.push('/(auth)/sign-in')}
+                variant="primary"
+                size="sm"
+                style={{ flex: 1, marginRight: 8 }}
+                icon={<Ionicons name="log-in-outline" size={16} color="#FFFFFF" />}
+              />
+              <Button
+                title="Create Account"
+                onPress={() => router.push('/(auth)/sign-up')}
+                variant="outline"
+                size="sm"
+                style={{ flex: 1 }}
+              />
+            </View>
+          </View>
+        )}
+
+        {/* 6. Compact App Version Footer */}
         <View style={styles.footerWrapper}>
           <Text style={styles.footerAppTitle}>AajKyaBanaye</Text>
-          <Text style={styles.footerVersion}>Version 1.0.0 • Made for food lovers</Text>
+          <Text style={styles.footerVersion}>Version 1.0.0 • Made with love for food lovers</Text>
           <View style={styles.swiggyCoBrandFooterBadge}>
-            <Ionicons name="flash" size={11} color="#FC8019" />
+            <Ionicons name="flash" size={10} color="#FC8019" />
             <Text style={styles.swiggyCoBrandFooterText}>Powered by Swiggy Instamart</Text>
           </View>
         </View>
@@ -395,259 +469,372 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFF9F0', // Warm off-white
+    backgroundColor: '#F8FAFC',
   },
   scrollContent: {
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 120,
+    paddingBottom: 24, // Compact bottom padding - no extra space!
     maxWidth: 480,
     width: '100%',
     alignSelf: 'center',
   },
 
-  /* 2. Profile Card */
+  /* Profile Header Hero Card */
   profileCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 22,
-    alignItems: 'center',
+    borderRadius: 22,
+    padding: 16,
     borderWidth: 1,
-    borderColor: '#ECE8DD',
+    borderColor: '#E2E8F0',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
-    elevation: 3,
-    marginBottom: 20,
+    elevation: 2,
+    marginBottom: 12,
+  },
+  profileCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   avatarContainer: {
     position: 'relative',
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    marginBottom: 12,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    marginRight: 14,
   },
   avatarCircle: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: '#EAF3ED',
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: '#EBF6F0',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#D4E6DA',
+    borderWidth: 1.5,
+    borderColor: '#C6E3CD',
   },
   avatarImage: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    borderWidth: 2.5,
-    borderColor: Colors.primary.DEFAULT,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    borderWidth: 2,
+    borderColor: '#1C4D38',
   },
   avatarEditBadge: {
     position: 'absolute',
     bottom: -1,
     right: -1,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: Colors.primary.DEFAULT,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#1C4D38',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 2,
+  },
+  nameSection: {
+    flex: 1,
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
+    gap: 6,
   },
   userName: {
     fontFamily: 'Poppins_700Bold',
-    fontSize: 20,
-    color: Colors.text.DEFAULT,
-    letterSpacing: -0.2,
+    fontSize: 18,
+    color: '#0F172A',
+    letterSpacing: -0.3,
+    flexShrink: 1,
   },
-  editPencilBtn: {
+  chefBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EAF3ED',
-    paddingVertical: 3,
-    paddingHorizontal: 8,
+    gap: 3,
+    backgroundColor: '#EBF6F0',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#D2E5DA',
+    borderColor: '#C6E3CD',
   },
-  editPencilText: {
+  chefBadgeText: {
     fontFamily: 'Inter_600SemiBold',
-    fontSize: 11.5,
-    color: '#1C4D38',
-    marginLeft: 3,
+    fontSize: 10,
+    color: '#059669',
   },
   userEmail: {
     fontFamily: 'Inter_400Regular',
-    fontSize: 12.5,
-    color: Colors.text.muted,
+    fontSize: 12,
+    color: '#64748B',
     marginTop: 2,
-    textAlign: 'center',
   },
   phoneRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    marginTop: 4,
+    gap: 4,
+    marginTop: 2,
   },
   phoneText: {
     fontFamily: 'Inter_500Medium',
-    fontSize: 12.5,
-    color: Colors.text.muted,
+    fontSize: 11.5,
+    color: '#64748B',
+  },
+  editProfileBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 6,
+  },
+
+  /* Quick Metrics Bar */
+  metricsBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  metricItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  metricNumber: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 13.5,
+    color: '#0F172A',
+  },
+  metricLabel: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  metricDivider: {
+    width: 1,
+    height: 22,
+    backgroundColor: '#E2E8F0',
+  },
+
+  /* Kitchen DNA Card */
+  tasteDnaCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  tasteDnaHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  tasteDnaTitle: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 14,
+    color: '#0F172A',
+  },
+  tunePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    backgroundColor: '#EBF6F0',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  tunePillText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 11,
+    color: '#1C4D38',
   },
   dietTagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 6,
-    marginTop: 12,
-  },
-  actionBtnRow: {
-    width: '100%',
-    marginTop: 16,
-  },
-  signOutBtn: {
-    borderColor: '#FED7D7',
-    backgroundColor: '#FFF8F8',
-  },
-  authBtnGroup: {
-    flexDirection: 'row',
-    width: '100%',
-    marginTop: 16,
   },
 
-  /* 4. Menu Sections */
+  /* Menu Sections */
   menuSection: {
-    marginBottom: 18,
+    marginBottom: 14,
   },
   groupHeading: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 12,
-    color: Colors.text.muted,
+    fontFamily: 'Inter_700Bold',
+    fontSize: 11,
+    color: '#64748B',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
-    marginBottom: 8,
+    marginBottom: 6,
     marginLeft: 4,
   },
   menuGroup: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#ECE7DC',
+    borderColor: '#E2E8F0',
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
-    shadowRadius: 5,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 13,
-    paddingHorizontal: 15,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F5F2EB',
+    borderBottomColor: '#F1F5F9',
   },
   menuItemLast: {
     borderBottomWidth: 0,
   },
   menuItemPressed: {
-    backgroundColor: '#FAF8F3',
+    backgroundColor: '#F8FAFC',
   },
   menuIconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#EAF3ED',
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 13,
-  },
-  menuIconCircleDestructive: {
-    backgroundColor: '#FDECEB',
+    marginRight: 12,
   },
   menuTextCol: {
     flex: 1,
     paddingRight: 6,
   },
   menuTitle: {
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 14,
-    color: Colors.text.DEFAULT,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 13.5,
+    color: '#0F172A',
   },
   menuTitleDestructive: {
-    color: Colors.error.DEFAULT,
+    color: '#DC2626',
   },
   menuSubtitle: {
     fontFamily: 'Inter_400Regular',
     fontSize: 11.5,
-    color: Colors.text.muted,
+    color: '#64748B',
     marginTop: 1,
   },
   menuBadge: {
-    backgroundColor: Colors.accent.DEFAULT,
-    borderRadius: 10,
-    paddingHorizontal: 8,
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 7,
     paddingVertical: 2,
+    borderRadius: 8,
     marginRight: 6,
   },
   menuBadgeText: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Inter_700Bold',
     fontSize: 11,
-    color: '#FFFFFF',
+    color: '#DC2626',
+  },
+
+  /* Sign Out & Auth CTA */
+  actionBtnRow: {
+    width: '100%',
+    marginTop: 4,
+    marginBottom: 10,
+  },
+  signOutPressable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 14,
+    paddingVertical: 12,
+  },
+  signOutText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 13.5,
+    color: '#DC2626',
+  },
+  authBanner: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginTop: 6,
+    marginBottom: 10,
+  },
+  authBannerTextCol: {
+    marginBottom: 12,
+  },
+  authBannerTitle: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 15,
+    color: '#0F172A',
+  },
+  authBannerSub: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+    lineHeight: 18,
+  },
+  authBannerBtns: {
+    flexDirection: 'row',
   },
 
   /* Footer */
   footerWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 10,
-    paddingBottom: 20,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   footerAppTitle: {
     fontFamily: 'Poppins_600SemiBold',
-    fontSize: 13,
-    color: Colors.text.muted,
+    fontSize: 12.5,
+    color: '#64748B',
   },
   footerVersion: {
     fontFamily: 'Inter_400Regular',
-    fontSize: 11,
-    color: '#A09C90',
-    marginTop: 2,
+    fontSize: 10.5,
+    color: '#94A3B8',
+    marginTop: 1,
   },
   swiggyCoBrandFooterBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#FFF0E5',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    gap: 3.5,
+    backgroundColor: '#FFF7ED',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 999,
-    marginTop: 8,
+    marginTop: 6,
     borderWidth: 1,
-    borderColor: '#FFD6BA',
+    borderColor: '#FFEDD5',
   },
   swiggyCoBrandFooterText: {
     fontFamily: 'Inter_600SemiBold',
-    fontSize: 11,
-    color: '#D45D00',
+    fontSize: 10,
+    color: '#EA580C',
     letterSpacing: 0.1,
   },
 });

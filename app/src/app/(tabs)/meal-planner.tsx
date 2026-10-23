@@ -877,8 +877,6 @@ export default function MealPlannerScreen() {
             />
           </View>
         </View>
-
-        <View style={{ height: 48 }} />
       </ScrollView>
 
       {/* 8. Recipe Picker Bottom Sheet Modal */}
@@ -1300,7 +1298,7 @@ const styles = StyleSheet.create({
   mainScrollContent: {
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 120,
+    paddingBottom: 28,
   },
 
   /* Calendar Strip */
