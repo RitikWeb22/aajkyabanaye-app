@@ -24,6 +24,7 @@ import {
 import { RecipeCard } from '../../components/recipe/RecipeCard';
 import { FeaturedRecipeCard } from '../../components/recipe/FeaturedRecipeCard';
 import { AiRecipeModal } from '../../components/ai/AiRecipeModal';
+import { AdBanner } from '../../components/ads/AdBanner';
 import {
   useRecipes,
   useBanners,
@@ -284,10 +285,16 @@ export default function HomeScreen() {
         {/* ======================================================== */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Text style={styles.greetingText}>
-              {greeting.text}, {displayName} 
-            </Text>
-            <Text style={styles.subGreetingText}>Aaj kya banega?</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <Text style={styles.greetingText}>
+                {greeting.text}, {displayName}
+              </Text>
+              <View style={styles.swiggyCoBrandBadge}>
+                <Ionicons name="flash" size={10} color="#FFFFFF" />
+                <Text style={styles.swiggyCoBrandText}>Powered by Swiggy</Text>
+              </View>
+            </View>
+            <Text style={styles.subGreetingText}>Aaj kya banega? • 10-Min Groceries</Text>
           </View>
 
           <View style={styles.headerRight}>
@@ -468,6 +475,28 @@ export default function HomeScreen() {
               </Text>
               <Text style={styles.tileSubtitle} numberOfLines={1}>
                 Custom creation
+              </Text>
+            </Pressable>
+
+            {/* Tile 5: Swiggy Instamart 10-Min Groceries */}
+            <Pressable
+              style={({ pressed }) => [
+                styles.quickTile,
+                { backgroundColor: '#FFF5EB' },
+                pressed && styles.tilePressed,
+              ]}
+              onPress={() => router.push('/(tabs)/search')}
+              accessibilityRole="button"
+              accessibilityLabel="10-Min Groceries Powered by Swiggy"
+            >
+              <View style={[styles.tileIconCircle, { backgroundColor: '#FFE2D1' }]}>
+                <Ionicons name="flash" size={19} color="#FC8019" />
+              </View>
+              <Text style={styles.tileTitle} numberOfLines={1}>
+                Instamart
+              </Text>
+              <Text style={styles.tileSubtitle} numberOfLines={1}>
+                Powered by Swiggy
               </Text>
             </Pressable>
           </ScrollView>
@@ -889,6 +918,9 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
+
+        {/* Google AdMob Banner */}
+        <AdBanner style={{ marginTop: 8, marginBottom: 16 }} />
       </ScrollView>
 
       {/* AI Recipe Generator Modal */}
@@ -939,6 +971,26 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     color: '#777D76',
     marginTop: 2,
+  },
+  swiggyCoBrandBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FC8019',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    shadowColor: '#FC8019',
+    shadowOffset: { width: 0, height: 1.5 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  swiggyCoBrandText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 10.5,
+    color: '#FFFFFF',
+    letterSpacing: 0.1,
   },
   headerRight: {
     flexDirection: 'row',

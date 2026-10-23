@@ -478,9 +478,15 @@ export default function RecipeDetailScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View>
-              <Text style={styles.sectionTitle}>Ingredient Checklist</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <Text style={styles.sectionTitle}>Ingredient Checklist</Text>
+                <View style={styles.swiggyCoBrandBadge}>
+                  <Ionicons name="flash" size={9} color="#FFFFFF" />
+                  <Text style={styles.swiggyCoBrandText}>Powered by Swiggy</Text>
+                </View>
+              </View>
               <Text style={styles.sectionSubtitle}>
-                Select items to generate shopping list or cook
+                Select missing items for 10-minute darkstore delivery
               </Text>
             </View>
             <View style={styles.counterPill}>
@@ -705,11 +711,17 @@ export default function RecipeDetailScreen() {
         ]}
       >
         <View style={styles.stickyInfo}>
-          <Text style={styles.stickyCountText}>
-            {selectedCount > 0 ? `${selectedCount} items selected` : 'No items selected'}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <Text style={styles.stickyCountText}>
+              {selectedCount > 0 ? `${selectedCount} items selected` : 'No items selected'}
+            </Text>
+            <View style={styles.swiggyCoBrandBadge}>
+              <Ionicons name="flash" size={9} color="#FFFFFF" />
+              <Text style={styles.swiggyCoBrandText}>Powered by Swiggy</Text>
+            </View>
+          </View>
           <Text style={styles.stickySubtext}>
-            {selectedCount > 0 ? `For ${currentServings} servings` : 'Check items you need'}
+            {selectedCount > 0 ? `10-min delivery • ${currentServings} servings` : 'Check items you need'}
           </Text>
         </View>
 
@@ -1166,5 +1178,20 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     fontSize: 11,
     color: Colors.text.muted,
+  },
+  swiggyCoBrandBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3.5,
+    backgroundColor: '#FC8019',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
+  swiggyCoBrandText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 9.5,
+    color: '#FFFFFF',
+    letterSpacing: 0.1,
   },
 });

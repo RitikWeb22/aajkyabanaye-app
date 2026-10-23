@@ -2,7 +2,7 @@
   "expo": {
     "name": "AajKyaBanaye",
     "slug": "aajkyabanaye",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "aajkyabanaye",
@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.aajkyabanaye.app",
-      "buildNumber": "4",
+      "buildNumber": "5",
       "infoPlist": {
         "LSApplicationQueriesSchemes": [
           "swiggy"
@@ -23,16 +23,12 @@
         "backgroundColor": "#FFF9F0"
       },
       "package": "com.aajkyabanaye.app",
-      "versionCode": 4
+      "versionCode": 5
     },
     "androidStatusBar": {
       "barStyle": "dark-content",
       "backgroundColor": "#FFF9F0",
       "translucent": false
-    },
-    "androidNavigationBar": {
-      "barStyle": "dark-content",
-      "backgroundColor": "#FFFFFF"
     },
     "web": {
       "bundler": "metro",
@@ -51,7 +47,9 @@
           "resizeMode": "contain",
           "backgroundColor": "#FFF9F0"
         }
-      ]
+      ],
+      "expo-sharing",
+      "react-native-google-mobile-ads"
     ],
     "experiments": {
       "typedRoutes": true
@@ -63,5 +61,9 @@
       }
     },
     "owner": "ritik2207"
+  },
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-3940256099942544~3347511713",
+    "ios_app_id": "ca-app-pub-3940256099942544~1458002511"
   }
 }

@@ -60,6 +60,8 @@ const clerkPublishableKey =
   process.env.CLERK_PUBLISHABLE_KEY ||
   'pk_test_aW50ZW50LWpvZXktNzU0MC5jbGVyay5hY2NvdW50cy5kZXYk';
 
+import { initializeAdMob } from '../lib/admob';
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     Poppins_600SemiBold,
@@ -72,6 +74,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
+      initializeAdMob();
     }
   }, [fontsLoaded, fontError]);
 

@@ -78,6 +78,11 @@ app.use(shoppingRouter);
 app.use(groceryListsRouter);
 app.use(mealPlansRouter);
 
+// Google AdMob verification
+app.get('/app-ads.txt', (_req: Request, res: Response) => {
+  res.type('text/plain').send('google.com, pub-1416168271239862, DIRECT, f08c47fec0942fa0\n');
+});
+
 // Root route
 app.get('/', (_req: Request, res: Response) => {
   res.json({

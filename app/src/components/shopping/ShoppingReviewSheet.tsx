@@ -74,6 +74,7 @@ export function ShoppingReviewSheet({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isSwiggyConnected, setIsSwiggyConnected] = useState<boolean>(false);
   const [openedItemKeys, setOpenedItemKeys] = useState<Record<string, boolean>>({});
+  const isSubmittingRef = React.useRef<boolean>(false);
 
   const [cartQuantities, setCartQuantities] = useState<Record<string, number>>({});
 
@@ -176,6 +177,8 @@ export function ShoppingReviewSheet({
 
   // Connect Swiggy via OAuth 2.1 PKCE and immediately proceed with cart creation
   const handleConnectSwiggyAndCreateCart = async () => {
+    if (isSubmittingRef.current || currentStep === 'processing') return;
+    isSubmittingRef.current = true;
     try {
       const res = await apiClient.getSwiggyAuthUrl();
       if (res?.data?.authUrl) {
@@ -202,6 +205,8 @@ export function ShoppingReviewSheet({
       }
     } catch (err) {
       console.warn('Swiggy connection notice:', err);
+    } finally {
+      isSubmittingRef.current = false;
     }
     // Proceed to create cart
     await handleStartCreateCart();
@@ -210,6 +215,8 @@ export function ShoppingReviewSheet({
   // Start Automated Cart Creation Workflow
   const handleStartCreateCart = async () => {
     if (items.length === 0) return;
+    if (isSubmittingRef.current || currentStep === 'processing') return;
+    isSubmittingRef.current = true;
 
     setCurrentStep('processing');
     setProcessingProgress(20);
@@ -287,6 +294,8 @@ export function ShoppingReviewSheet({
         },
       });
       setCurrentStep('cart');
+    } finally {
+      isSubmittingRef.current = false;
     }
   };
 
@@ -382,7 +391,13 @@ export function ShoppingReviewSheet({
               <>
                 <View style={styles.header}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.title}>Review Ingredients</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3, flexWrap: 'wrap' }}>
+                      <Text style={styles.title}>Review Ingredients</Text>
+                      <View style={styles.swiggyCoBrandPill}>
+                        <Ionicons name="flash" size={10} color="#FFFFFF" />
+                        <Text style={styles.swiggyCoBrandPillText}>Powered by Swiggy</Text>
+                      </View>
+                    </View>
                     <Text style={styles.subtitle} numberOfLines={1}>
                       {recipeTitle} · {items.length} items ({servings} servings)
                     </Text>
@@ -535,7 +550,7 @@ export function ShoppingReviewSheet({
                     <View style={styles.cartHeaderRow}>
                       <View style={styles.instamartPill}>
                         <Ionicons name="flash" size={11} color="#FFFFFF" />
-                        <Text style={styles.instamartPillText}>INSTAMART</Text>
+                        <Text style={styles.instamartPillText}>POWERED BY SWIGGY INSTAMART</Text>
                       </View>
                     </View>
                     <Text style={styles.title}>Instamart Cart</Text>
@@ -1025,16 +1040,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#FF5200',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 5,
+    backgroundColor: '#FC8019',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   instamartPillText: {
     fontFamily: 'Inter_700Bold',
     fontSize: 9.5,
     color: '#FFFFFF',
     letterSpacing: 0.5,
+  },
+  swiggyCoBrandPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3.5,
+    backgroundColor: '#FC8019',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 999,
+  },
+  swiggyCoBrandPillText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 9.5,
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
   },
   addressEtaRow: {
     flexDirection: 'row',

@@ -22,6 +22,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { apiClient } from '../../services/api/apiClient';
 import { useFavorites } from '../../hooks/useFavorites';
 import { useUserProfile } from '../../hooks/useUserProfile';
+import { AdBanner } from '../../components/ads/AdBanner';
 
 interface MenuItemProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -379,10 +380,17 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Google AdMob Banner */}
+        <AdBanner style={{ marginTop: 12, marginBottom: 4 }} />
+
         {/* App Version Footer */}
         <View style={styles.footerWrapper}>
           <Text style={styles.footerAppTitle}>AajKyaBanaye</Text>
           <Text style={styles.footerVersion}>Version 1.0.0 • Made for food lovers</Text>
+          <View style={styles.swiggyCoBrandFooterBadge}>
+            <Ionicons name="flash" size={11} color="#FC8019" />
+            <Text style={styles.swiggyCoBrandFooterText}>Powered by Swiggy Instamart</Text>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -628,5 +636,23 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#A09C90',
     marginTop: 2,
+  },
+  swiggyCoBrandFooterBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFF0E5',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#FFD6BA',
+  },
+  swiggyCoBrandFooterText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 11,
+    color: '#D45D00',
+    letterSpacing: 0.1,
   },
 });

@@ -113,18 +113,13 @@ async function runPhase7Tests() {
   console.log('\n--- 4. Testing Endpoints & Auth Guards ---');
   try {
     const baseUrl = 'http://localhost:5000';
+    // Verify unauthenticated GET /me/ai-recipes returns 401 (requireAuth)
+    const resHistoryUnauth = await fetch(`${baseUrl}/me/ai-recipes`);
+    assert('GET /me/ai-recipes returns 401 without Bearer token', resHistoryUnauth.status === 401);
 
-    // Verify unauthenticated POST /ai/recipes/generate returns 401
-    const resUnauth = await fetch(`${baseUrl}/ai/recipes/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: 'test' }),
-    });
-    assert('POST /ai/recipes/generate returns 401 without Bearer token', resUnauth.status === 401);
-
-    // Verify unauthenticated GET /ai/quota returns 401
-    const resQuotaUnauth = await fetch(`${baseUrl}/ai/quota`);
-    assert('GET /ai/quota returns 401 without Bearer token', resQuotaUnauth.status === 401);
+    // Verify guest access for /ai/quota returns 200
+    const resQuota = await fetch(`${baseUrl}/ai/quota`);
+    assert('GET /ai/quota returns 200 with quota info for guest', resQuota.status === 200);
   } catch (err: any) {
     assert('Live endpoints respond successfully', false, err);
   }

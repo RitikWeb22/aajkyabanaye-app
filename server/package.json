@@ -16,6 +16,7 @@
     "test:phase8": "tsx tests/test-phase8.ts",
     "test:phase9": "tsx tests/test-phase9.ts",
     "test:phase10": "tsx tests/test-phase10.ts",
+    "test:qa": "tsx tests/test-master-qa.ts",
     "lint": "echo \"Server lint pass\""
   },
   "dependencies": {

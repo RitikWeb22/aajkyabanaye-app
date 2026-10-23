@@ -788,7 +788,13 @@ export default function MealPlannerScreen() {
 
           <View style={{ flex: 1 }}>
             <View style={styles.groceryTitleRow}>
-              <Text style={styles.groceryCtaTitle}>Your smart shopping list</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <Text style={styles.groceryCtaTitle}>Your smart shopping list</Text>
+                <View style={styles.swiggyCoBrandBadge}>
+                  <Ionicons name="flash" size={9} color="#FFFFFF" />
+                  <Text style={styles.swiggyCoBrandText}>Powered by Swiggy</Text>
+                </View>
+              </View>
               <View style={styles.groceryCountPill}>
                 <Text style={styles.groceryCountPillText}>
                   {totalPlannedInWeek} planned
@@ -1637,6 +1643,21 @@ const styles = StyleSheet.create({
     color: Colors.text.muted,
     marginTop: 3,
     lineHeight: 18,
+  },
+  swiggyCoBrandBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3.5,
+    backgroundColor: '#FC8019',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
+  swiggyCoBrandText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 9.5,
+    color: '#FFFFFF',
+    letterSpacing: 0.1,
   },
 
   /* Signed-Out State */

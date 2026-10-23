@@ -15,27 +15,26 @@ export function getTodayDateKey(): string {
 }
 
 /**
- * Check if the user is within their daily AI quota and atomically increment if allowed
+ * Check if the user is within their daily AI quota and atomically increment if allowed.
+ * Handles concurrent initial creation and prevents MongoDB duplicate key errors (E11000).
  */
 export async function checkAndIncrementQuota(userId: string): Promise<QuotaStatus> {
   const dateKey = getTodayDateKey();
   const limit = env.AI_DAILY_LIMIT_PER_USER;
 
-  // 1. First check existing usage for today
-  const existing = await AiUsageModel.findOne({ clerkUserId: userId, dateKey });
-  const currentCount = existing ? existing.count : 0;
-
-  if (currentCount >= limit) {
-    return {
-      allowed: false,
-      used: currentCount,
-      limit,
-      remaining: 0,
-      dateKey,
-    };
+  // 1. Ensure record exists atomically without race conditions
+  try {
+    await AiUsageModel.updateOne(
+      { clerkUserId: userId, dateKey },
+      { $setOnInsert: { clerkUserId: userId, dateKey, count: 0 } },
+      { upsert: true }
+    );
+  } catch (err: any) {
+    // E11000 duplicate key error can occur under simultaneous upserts - safe to ignore
+    if (err.code !== 11000) throw err;
   }
 
-  // 2. Atomically increment
+  // 2. Atomically increment count ONLY IF current count < limit (without upsert)
   const updated = await AiUsageModel.findOneAndUpdate(
     {
       clerkUserId: userId,
@@ -47,16 +46,16 @@ export async function checkAndIncrementQuota(userId: string): Promise<QuotaStatu
     },
     {
       returnDocument: 'after',
-      upsert: true,
-      setDefaultsOnInsert: true,
     }
   );
 
   if (!updated) {
-    // Race condition hit: limit reached concurrently
+    // Limit reached or exceeded concurrently
+    const current = await AiUsageModel.findOne({ clerkUserId: userId, dateKey });
+    const used = current ? current.count : limit;
     return {
       allowed: false,
-      used: limit,
+      used,
       limit,
       remaining: 0,
       dateKey,
@@ -70,6 +69,21 @@ export async function checkAndIncrementQuota(userId: string): Promise<QuotaStatu
     remaining: Math.max(0, limit - updated.count),
     dateKey,
   };
+}
+
+/**
+ * Rollback/refund an incremented quota if AI generation fails (network error, timeout, filter)
+ */
+export async function rollbackQuota(userId: string): Promise<void> {
+  try {
+    const dateKey = getTodayDateKey();
+    await AiUsageModel.updateOne(
+      { clerkUserId: userId, dateKey, count: { $gt: 0 } },
+      { $inc: { count: -1 } }
+    );
+  } catch (err) {
+    console.error('Failed to rollback AI quota:', err);
+  }
 }
 
 /**

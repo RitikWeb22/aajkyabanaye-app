@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { requireAuth, optionalAuth } from '../middleware/auth.js';
-import { checkAndIncrementQuota, getQuotaStatus } from '../services/ai/quota.js';
+import { checkAndIncrementQuota, getQuotaStatus, rollbackQuota } from '../services/ai/quota.js';
 import { aiRecipeGenerator } from '../services/ai/generator.js';
 import { AiRecipeModel } from '../models/AiRecipe.js';
 
@@ -23,8 +23,10 @@ const generateRecipeSchema = z.object({
  * AI recipe generation with quota check, rate limiting, and persistence
  */
 aiRouter.post('/ai/recipes/generate', optionalAuth, async (req: Request, res: Response) => {
+  let quotaDeducted = false;
+  let userId = '';
   try {
-    const userId = req.userId || (req.ip ? `guest_${req.ip.replace(/[^a-zA-Z0-9]/g, '_')}` : 'guest_anon');
+    userId = req.userId || (req.ip ? `guest_${req.ip.replace(/[^a-zA-Z0-9]/g, '_')}` : 'guest_anon');
 
     // 1. Validate request body
     const parsed = generateRecipeSchema.safeParse(req.body);
@@ -54,6 +56,7 @@ aiRouter.post('/ai/recipes/generate', optionalAuth, async (req: Request, res: Re
         },
       });
     }
+    quotaDeducted = true;
 
     // 3. Generate recipe via Gemini AI service
     const { recipe, modelUsed } = await aiRecipeGenerator.generate(parsed.data);
@@ -76,6 +79,10 @@ aiRouter.post('/ai/recipes/generate', optionalAuth, async (req: Request, res: Re
     });
   } catch (err: any) {
     console.error('Error generating AI recipe:', err);
+    if (quotaDeducted && userId) {
+      // Rollback quota so failed generations do not penalize the user
+      await rollbackQuota(userId);
+    }
     res.status(500).json({
       error: {
         code: 'AI_GENERATION_FAILED',

@@ -95,6 +95,13 @@ export function AiRecipeModal({
   };
 
   const handleGenerate = () => {
+    if (isPending) return;
+    if (!isSignedIn) {
+      onClose();
+      router.push('/(auth)/sign-in' as any);
+      return;
+    }
+
     setErrorMessage(null);
 
     generateRecipe(
