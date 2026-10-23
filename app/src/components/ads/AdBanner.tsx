@@ -1,103 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Platform, StyleSheet } from 'react-native';
-import { Colors } from '../../constants/theme';
+import React from 'react';
 
 interface AdBannerProps {
   unitId?: string;
   style?: any;
 }
 
-export function AdBanner({ unitId, style }: AdBannerProps) {
-  const [AdComponent, setAdComponent] = useState<any>(null);
-  const [adSize, setAdSize] = useState<any>(null);
-  const [testBannerId, setTestBannerId] = useState<string>('');
-  const [isError, setIsError] = useState<boolean>(false);
-
-  useEffect(() => {
-    // Only attempt to load Google Mobile Ads on native platforms
-    if (Platform.OS === 'web') {
-      return;
-    }
-
-    let isMounted = true;
-
-    async function loadAdModule() {
-      try {
-        const adsModule = await import('react-native-google-mobile-ads');
-        if (isMounted && adsModule.BannerAd && adsModule.BannerAdSize) {
-          setAdComponent(() => adsModule.BannerAd);
-          setAdSize(adsModule.BannerAdSize.ANCHORED_ADAPTIVE_BANNER || adsModule.BannerAdSize.BANNER);
-          setTestBannerId(adsModule.TestIds?.BANNER || 'ca-app-pub-3940256099942544/6300978111');
-        }
-      } catch (e) {
-        // Expected fallback in Expo Go / web where native binary is not bundled
-        if (isMounted) {
-          setIsError(true);
-        }
-      }
-    }
-
-    loadAdModule();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // User requested to disable ad banners for clean premium UI
+/**
+ * AdBanner component disabled per user request for clean, premium UI.
+ * Returns null safely on native and web without loading native ad libraries.
+ */
+export function AdBanner(_props: AdBannerProps) {
   return null;
-  const targetUnitId = __DEV__
-    ? testBannerId
-    : unitId || process.env.EXPO_PUBLIC_ADMOB_BANNER_ID || testBannerId;
-
-  return (
-    <View style={[styles.container, style]}>
-      <AdComponent
-        unitId={targetUnitId}
-        size={adSize}
-        requestOptions={{
-          requestNonPersonalizedAdsOnly: true,
-        }}
-        onAdLoaded={() => {
-          if (__DEV__) console.log('[AdMob] Banner loaded successfully');
-        }}
-        onAdFailedToLoad={(error: any) => {
-          if (__DEV__) console.warn('[AdMob] Banner failed to load:', error?.message || error);
-          setIsError(true);
-        }}
-      />
-    </View>
-  );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 12,
-    minHeight: 50,
-  },
-  devContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginVertical: 12,
-    marginHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: '#F3EFE6',
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#D4CEBF',
-  },
-  devBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.primary.DEFAULT,
-    marginBottom: 2,
-  },
-  devSubText: {
-    fontSize: 10.5,
-    color: Colors.text.muted,
-  },
-});
