@@ -389,128 +389,194 @@ export function ShoppingReviewSheet({
             {/* SCREEN 1: Review & Customize Ingredients */}
             {currentStep === 'review' && (
               <>
-                <View style={styles.header}>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3, flexWrap: 'wrap' }}>
-                      <Text style={styles.title}>Review Ingredients</Text>
-                      <View style={styles.swiggyCoBrandPill}>
+                <View style={styles.reviewHeader}>
+                  <View style={{ flex: 1, paddingRight: 12 }}>
+                    <View style={styles.reviewHeaderBadgeRow}>
+                      <View style={styles.swiggyInstamartBadge}>
                         <Ionicons name="flash" size={10} color="#FFFFFF" />
-                        <Text style={styles.swiggyCoBrandPillText}>Powered by Swiggy</Text>
+                        <Text style={styles.swiggyInstamartBadgeText}>SWIGGY INSTAMART</Text>
+                      </View>
+                      <View style={styles.deliveryTimePill}>
+                        <Ionicons name="time-outline" size={11} color="#059669" />
+                        <Text style={styles.deliveryTimePillText}>10m Delivery</Text>
                       </View>
                     </View>
-                    <Text style={styles.subtitle} numberOfLines={1}>
-                      {recipeTitle} · {items.length} items ({servings} servings)
+                    <Text style={styles.reviewTitle}>Review Ingredients</Text>
+                    <Text style={styles.reviewSubtitle} numberOfLines={1}>
+                      {recipeTitle} • {items.length} item{items.length === 1 ? '' : 's'} ({servings} servings)
                     </Text>
                   </View>
-                  <IconButton
-                    icon={<Ionicons name="close" size={22} color={Colors.text.DEFAULT} />}
+                  <Pressable
                     onPress={onClose}
-                    variant="ghost"
-                    size="sm"
-                    accessibilityLabel="Close shopping list"
-                  />
+                    style={styles.reviewCloseBtn}
+                    hitSlop={8}
+                    accessibilityLabel="Close"
+                  >
+                    <Ionicons name="close" size={20} color="#475569" />
+                  </Pressable>
                 </View>
 
                 {!isSwiggyConnected ? (
-                  <Pressable style={styles.linkSwiggyNotice} onPress={handleConnectSwiggyAndCreateCart}>
-                    <Ionicons name="flash" size={16} color="#FF5200" />
+                  <Pressable style={styles.swiggyConnectCard} onPress={handleConnectSwiggyAndCreateCart}>
+                    <View style={styles.swiggyConnectIconCircle}>
+                      <Ionicons name="flash" size={15} color="#FFFFFF" />
+                    </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.linkSwiggyNoticeTitle}>Swiggy Instamart Cart Sync</Text>
-                      <Text style={styles.linkSwiggyNoticeSub}>
-                        Swiggy requires 1-time OTP login to add items directly to your Instamart cart.
+                      <Text style={styles.swiggyConnectTitle}>Auto-Sync to Swiggy Cart</Text>
+                      <Text style={styles.swiggyConnectSub}>
+                        Matches items with live darkstore inventory
                       </Text>
                     </View>
-                    <View style={styles.linkSwiggyPill}>
-                      <Text style={styles.linkSwiggyPillText}>Link Swiggy</Text>
+                    <View style={styles.swiggyConnectBtnPill}>
+                      <Text style={styles.swiggyConnectBtnText}>Link Swiggy</Text>
                     </View>
                   </Pressable>
                 ) : (
-                  <View style={styles.connectedBadgeRow}>
-                    <Ionicons name="checkmark-circle" size={15} color="#16A34A" />
-                    <Text style={styles.connectedBadgeText}>Swiggy Connected · 1-Click Cart Sync Active</Text>
+                  <View style={styles.swiggyConnectedBanner}>
+                    <Ionicons name="checkmark-circle" size={16} color="#059669" />
+                    <Text style={styles.swiggyConnectedText}>
+                      Swiggy Connected • 1-Click Darkstore Sync Active
+                    </Text>
                   </View>
                 )}
 
+                <View style={styles.listSectionHeader}>
+                  <Text style={styles.listSectionTitle}>INGREDIENTS CHECKLIST ({items.length})</Text>
+                  <Text style={styles.listSectionHint}>Tap ✏️ to customize name</Text>
+                </View>
+
                 <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
-                  {items.map((item) => {
-                    const isEditing = editingItemId === item.id;
-                    return (
-                      <View key={item.id} style={styles.itemCard}>
-                        {isEditing ? (
-                          <View style={styles.editRow}>
-                            <TextInput
-                              value={editingText}
-                              onChangeText={setEditingText}
-                              style={styles.editInput}
-                              autoFocus
-                              returnKeyType="done"
-                              onSubmitEditing={() => handleSaveEdit(item.id)}
-                            />
-                            <Pressable onPress={() => handleSaveEdit(item.id)} style={styles.saveBtn}>
-                              <Ionicons name="checkmark" size={20} color="#16A34A" />
-                            </Pressable>
-                          </View>
-                        ) : (
-                          <View style={styles.itemRow}>
-                            <View style={styles.itemInfo}>
-                              <Text style={styles.itemName}>{item.groceryTerm || item.name}</Text>
-                              {item.formattedQuantity ? (
-                                <Text style={styles.itemQty}>{item.formattedQuantity}</Text>
-                              ) : null}
+                  {items.length === 0 ? (
+                    <View style={styles.emptyReviewBox}>
+                      <Ionicons name="basket-outline" size={38} color="#94A3B8" />
+                      <Text style={styles.emptyReviewTitle}>No ingredients selected</Text>
+                      <Text style={styles.emptyReviewSub}>
+                        Go back to select the ingredients you need from the recipe.
+                      </Text>
+                    </View>
+                  ) : (
+                    items.map((item) => {
+                      const isEditing = editingItemId === item.id;
+                      return (
+                        <View key={item.id} style={styles.reviewItemCard}>
+                          {isEditing ? (
+                            <View style={styles.editRow}>
+                              <TextInput
+                                value={editingText}
+                                onChangeText={setEditingText}
+                                style={styles.editInput}
+                                placeholder="Grocery search term..."
+                                placeholderTextColor="#94A3B8"
+                                autoFocus
+                                returnKeyType="done"
+                                onSubmitEditing={() => handleSaveEdit(item.id)}
+                              />
+                              <Pressable onPress={() => handleSaveEdit(item.id)} style={styles.saveBtn} hitSlop={6}>
+                                <Ionicons name="checkmark-circle" size={24} color="#059669" />
+                              </Pressable>
+                              <Pressable onPress={() => setEditingItemId(null)} style={styles.saveBtn} hitSlop={6}>
+                                <Ionicons name="close-circle-outline" size={24} color="#94A3B8" />
+                              </Pressable>
                             </View>
-                            <View style={styles.actionsRow}>
-                              {/* Quantity Stepper */}
-                              <View style={styles.reviewQtyStepper}>
-                                <Pressable
-                                  onPress={() => handleReviewQtyChange(item.id, -1)}
-                                  style={styles.reviewQtyBtn}
-                                  hitSlop={6}
-                                  accessibilityLabel="Decrease quantity"
-                                >
-                                  <Ionicons name="remove" size={13} color="#4B5563" />
-                                </Pressable>
-                                <Text style={styles.reviewQtyVal}>{item.packQuantity || 1}</Text>
-                                <Pressable
-                                  onPress={() => handleReviewQtyChange(item.id, 1)}
-                                  style={styles.reviewQtyBtn}
-                                  hitSlop={6}
-                                  accessibilityLabel="Increase quantity"
-                                >
-                                  <Ionicons name="add" size={13} color="#4B5563" />
-                                </Pressable>
+                          ) : (
+                            <View style={styles.reviewItemRow}>
+                              <View style={styles.reviewItemLeft}>
+                                <View style={styles.ingredientIconContainer}>
+                                  <Ionicons name="nutrition-outline" size={16} color="#1C4D38" />
+                                </View>
+                                <View style={styles.reviewItemTextCol}>
+                                  <Text style={styles.reviewItemName} numberOfLines={1}>
+                                    {item.groceryTerm || item.name}
+                                  </Text>
+                                  <View style={styles.reviewItemMetaRow}>
+                                    {item.formattedQuantity ? (
+                                      <View style={styles.reviewQtyTag}>
+                                        <Text style={styles.reviewQtyTagText}>{item.formattedQuantity}</Text>
+                                      </View>
+                                    ) : null}
+                                    {item.groceryTerm && item.groceryTerm !== item.name && (
+                                      <Text style={styles.customizedTermTag} numberOfLines={1}>
+                                        Customized
+                                      </Text>
+                                    )}
+                                  </View>
+                                </View>
                               </View>
 
-                              <Pressable onPress={() => handleStartEdit(item)} style={styles.iconBtn} hitSlop={6}>
-                                <Ionicons name="pencil" size={14} color={Colors.text.muted} />
-                              </Pressable>
-                              <Pressable onPress={() => handleRemove(item.id)} style={styles.iconBtn} hitSlop={6}>
-                                <Ionicons name="trash-outline" size={15} color="#DC2626" />
-                              </Pressable>
+                              <View style={styles.reviewActionsRow}>
+                                {/* Quantity Stepper */}
+                                <View style={styles.reviewStepper}>
+                                  <Pressable
+                                    onPress={() => handleReviewQtyChange(item.id, -1)}
+                                    style={styles.reviewStepperBtn}
+                                    hitSlop={6}
+                                    accessibilityLabel="Decrease quantity"
+                                  >
+                                    <Ionicons name="remove" size={12} color="#334155" />
+                                  </Pressable>
+                                  <Text style={styles.reviewStepperValue}>{item.packQuantity || 1}</Text>
+                                  <Pressable
+                                    onPress={() => handleReviewQtyChange(item.id, 1)}
+                                    style={styles.reviewStepperBtn}
+                                    hitSlop={6}
+                                    accessibilityLabel="Increase quantity"
+                                  >
+                                    <Ionicons name="add" size={12} color="#334155" />
+                                  </Pressable>
+                                </View>
+
+                                <Pressable
+                                  onPress={() => handleStartEdit(item)}
+                                  style={styles.reviewIconBtn}
+                                  hitSlop={6}
+                                  accessibilityLabel={`Edit ${item.name}`}
+                                >
+                                  <Ionicons name="pencil" size={13} color="#64748B" />
+                                </Pressable>
+                                <Pressable
+                                  onPress={() => handleRemove(item.id)}
+                                  style={[styles.reviewIconBtn, styles.reviewDeleteBtn]}
+                                  hitSlop={6}
+                                  accessibilityLabel={`Remove ${item.name}`}
+                                >
+                                  <Ionicons name="trash-outline" size={14} color="#EF4444" />
+                                </Pressable>
+                              </View>
                             </View>
-                          </View>
-                        )}
-                      </View>
-                    );
-                  })}
+                          )}
+                        </View>
+                      );
+                    })
+                  )}
                 </ScrollView>
 
-                <View style={styles.footer}>
-                  <Button
-                    title="Copy List"
+                <View style={styles.reviewFooter}>
+                  <Pressable
+                    style={styles.reviewCopyBtn}
                     onPress={handleCopyList}
-                    variant="outline"
-                    size="md"
-                    icon={<Ionicons name="copy-outline" size={16} color={Colors.primary.DEFAULT} />}
-                    style={{ flex: 0.85, marginRight: 8 }}
-                  />
-                  <Button
-                    title={isSwiggyConnected ? `Order Instamart` : `Order Instamart`}
+                    accessibilityLabel="Copy shopping list"
+                  >
+                    <Ionicons name="copy-outline" size={16} color="#1C4D38" />
+                    <Text style={styles.reviewCopyBtnText}>Copy List</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[
+                      styles.reviewOrderBtn,
+                      items.length === 0 && styles.reviewOrderBtnDisabled,
+                    ]}
                     onPress={isSwiggyConnected ? handleStartCreateCart : handleConnectSwiggyAndCreateCart}
-                    variant="primary"
-                    size="md"
-                    icon={<Ionicons name="flash" size={15} color="#FFFFFF" />}
-                    style={{ flex: 1.35, backgroundColor: '#FF5200' }}
-                  />
+                    disabled={items.length === 0}
+                    accessibilityLabel={`Order ${items.length} items on Instamart`}
+                  >
+                    <View style={styles.reviewOrderBtnContent}>
+                      <Ionicons name="flash" size={16} color="#FFFFFF" />
+                      <Text style={styles.reviewOrderBtnText}>
+                        Order on Instamart ({items.length})
+                      </Text>
+                    </View>
+                    <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+                  </Pressable>
                 </View>
               </>
             )}
@@ -859,6 +925,340 @@ const styles = StyleSheet.create({
     color: Colors.text.muted,
     marginTop: 1,
   },
+  /* Review Screen Header & Badges */
+  reviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+  },
+  reviewHeaderBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  swiggyInstamartBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3.5,
+    backgroundColor: '#FF5200',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  swiggyInstamartBadgeText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 9.5,
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
+  },
+  deliveryTimePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3.5,
+    backgroundColor: '#EBF6F0',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  deliveryTimePillText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 10,
+    color: '#059669',
+  },
+  reviewTitle: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 19,
+    color: '#0F172A',
+    letterSpacing: -0.3,
+  },
+  reviewSubtitle: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  reviewCloseBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /* Swiggy Connect / Sync Banner */
+  swiggyConnectCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#FFF7F2',
+    marginHorizontal: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+    marginBottom: 10,
+  },
+  swiggyConnectIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FF5200',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  swiggyConnectTitle: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 12.5,
+    color: '#9A3412',
+  },
+  swiggyConnectSub: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 11,
+    color: '#7C2D12',
+    marginTop: 1,
+  },
+  swiggyConnectBtnPill: {
+    backgroundColor: '#FF5200',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  swiggyConnectBtnText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 11,
+    color: '#FFFFFF',
+  },
+  swiggyConnectedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: '#EBF6F0',
+    marginHorizontal: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#C6E3CD',
+    marginBottom: 10,
+  },
+  swiggyConnectedText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 11.5,
+    color: '#1C4D38',
+  },
+  /* List Section Header */
+  listSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    marginBottom: 8,
+  },
+  listSectionTitle: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 11,
+    color: '#64748B',
+    letterSpacing: 0.5,
+  },
+  listSectionHint: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 10.5,
+    color: '#94A3B8',
+  },
+  /* Item Cards */
+  reviewItemCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  reviewItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  reviewItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
+    gap: 10,
+  },
+  ingredientIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#EBF6F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reviewItemTextCol: {
+    flex: 1,
+  },
+  reviewItemName: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 13.5,
+    color: '#1E293B',
+  },
+  reviewItemMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 3,
+  },
+  reviewQtyTag: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+  },
+  reviewQtyTagText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 11,
+    color: '#475569',
+  },
+  customizedTermTag: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 10.5,
+    color: '#059669',
+  },
+  reviewActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  reviewStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 3,
+    paddingVertical: 2,
+    gap: 4,
+  },
+  reviewStepperBtn: {
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 4,
+    backgroundColor: '#FFFFFF',
+  },
+  reviewStepperValue: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 12,
+    color: '#0F172A',
+    minWidth: 16,
+    textAlign: 'center',
+  },
+  reviewIconBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  reviewDeleteBtn: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FEE2E2',
+  },
+  /* Empty State */
+  emptyReviewBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 36,
+    paddingHorizontal: 20,
+  },
+  emptyReviewTitle: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 16,
+    color: '#334155',
+    marginTop: 10,
+  },
+  emptyReviewSub: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  /* Footer */
+  reviewFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    backgroundColor: '#FFFFFF',
+    gap: 10,
+  },
+  reviewCopyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+  },
+  reviewCopyBtnText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 13.5,
+    color: '#1C4D38',
+  },
+  reviewOrderBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FF5200',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    shadowColor: '#FF5200',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.28,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  reviewOrderBtnDisabled: {
+    backgroundColor: '#94A3B8',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  reviewOrderBtnContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  reviewOrderBtnText: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 13.5,
+    color: '#FFFFFF',
+  },
   cartHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1021,11 +1421,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.text.DEFAULT,
     backgroundColor: '#F3F4F6',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   saveBtn: {
+    padding: 4,
+  },
+  cancelBtn: {
     padding: 4,
   },
   sectionHeading: {
