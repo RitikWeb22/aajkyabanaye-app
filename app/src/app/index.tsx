@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Pressable, Animated, Easing } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +14,48 @@ export default function IndexScreen() {
   const { isSignedIn, isLoaded } = useAuth();
   const hasCompletedOnboarding = useAppStore((s) => s.hasCompletedOnboarding);
 
+  const scaleAnim = useRef(new Animated.Value(0.88)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const floatAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Entrance animation
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Subtle gentle breathing/floating loop
+    const floatLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: -6,
+          duration: 1600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 6,
+          duration: 1600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    floatLoop.start();
+
+    return () => floatLoop.stop();
+  }, [scaleAnim, opacityAnim, floatAnim]);
+
   useEffect(() => {
     if (!isLoaded) return;
 
@@ -23,7 +65,7 @@ export default function IndexScreen() {
       } else {
         router.replace('/onboarding');
       }
-    }, 1500);
+    }, 1800);
 
     return () => clearTimeout(timer);
   }, [hasCompletedOnboarding, isSignedIn, isLoaded, router]);
@@ -32,34 +74,46 @@ export default function IndexScreen() {
     if (isSignedIn || hasCompletedOnboarding) {
       router.replace('/(tabs)/home');
     } else {
-      router.replace('/(tabs)/home'); // Direct access to Home
+      router.replace('/(tabs)/home');
     }
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <Pressable style={styles.container} onPress={handleManualNavigate}>
-        {/* Brand Icon with Pot */}
-        <View style={styles.logoWrapper}>
+        {/* Soft Warm Radial Backdrop Glow */}
+        <View style={styles.glowCircle} pointerEvents="none" />
+
+        {/* Brand Mascot & Logo Showcase */}
+        <Animated.View
+          style={[
+            styles.logoContainer,
+            {
+              opacity: opacityAnim,
+              transform: [{ scale: scaleAnim }, { translateY: floatAnim }],
+            },
+          ]}
+        >
           <Image
-            source={require('../../assets/images/icon.png')}
-            style={styles.logo}
+            source={require('../../assets/images/logo.png')}
+            style={styles.heroLogo}
             contentFit="contain"
             transition={300}
           />
-        </View>
+        </Animated.View>
 
-        {/* Brand Typography */}
-        <View style={styles.textContainer}>
-          <Text style={styles.title}>
-            AajKya<Text style={styles.titleAccent}>Banaye</Text>
-          </Text>
+        {/* Brand Tagline & Subtitle */}
+        <Animated.View style={[styles.textContainer, { opacity: opacityAnim }]}>
+          <View style={styles.badgeRow}>
+            <Ionicons name="sparkles" size={13} color="#D97706" />
+            <Text style={styles.badgeText}>SMART KITCHEN ASSISTANT</Text>
+          </View>
           <Text style={styles.tagline}>Aaj kya banega? Let's find out!</Text>
-          <Text style={styles.splashLine}>Your next delicious meal starts here.</Text>
-        </View>
+          <Text style={styles.splashLine}>Your personalized AI recipes, pantry & meal planner.</Text>
+        </Animated.View>
 
         {/* Fast Action CTA */}
-        <View style={styles.actionWrapper}>
+        <Animated.View style={[styles.actionWrapper, { opacity: opacityAnim }]}>
           <Button
             title="Let's Cook"
             onPress={handleManualNavigate}
@@ -69,7 +123,7 @@ export default function IndexScreen() {
             icon={<Ionicons name="arrow-forward" size={18} color="#FFFFFF" />}
             iconPosition="right"
           />
-        </View>
+        </Animated.View>
       </Pressable>
     </SafeAreaView>
   );
@@ -85,51 +139,64 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 28,
+    position: 'relative',
   },
-  logoWrapper: {
-    width: 170,
-    height: 170,
-    borderRadius: 85,
-    backgroundColor: '#FFFFFF',
+  glowCircle: {
+    position: 'absolute',
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(235, 171, 56, 0.12)',
+    top: '20%',
+    alignSelf: 'center',
+  },
+  logoContainer: {
+    width: 250,
+    height: 250,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.primary.DEFAULT,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.14,
-    shadowRadius: 18,
-    elevation: 8,
-    marginBottom: 28,
-    overflow: 'hidden',
+    marginBottom: 20,
   },
-  logo: {
-    width: 160,
-    height: 160,
+  heroLogo: {
+    width: '100%',
+    height: '100%',
   },
   textContainer: {
     alignItems: 'center',
-    marginBottom: 44,
+    marginBottom: 36,
   },
-  title: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 34,
-    color: Colors.primary.DEFAULT,
-    letterSpacing: -0.5,
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
   },
-  titleAccent: {
-    color: Colors.accent.DEFAULT,
+  badgeText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 10,
+    color: '#B45309',
+    letterSpacing: 0.8,
   },
   tagline: {
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 16,
-    color: Colors.text.DEFAULT,
-    marginTop: 6,
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 20,
+    color: '#1E3A2F',
+    textAlign: 'center',
   },
   splashLine: {
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
     color: Colors.text.muted,
-    marginTop: 8,
+    marginTop: 6,
     textAlign: 'center',
+    maxWidth: 290,
+    lineHeight: 20,
   },
   actionWrapper: {
     width: '100%',
