@@ -4,10 +4,12 @@ import {
   Text,
   StyleSheet,
   Pressable,
+  TextInput,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -18,21 +20,22 @@ import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 
-import { Colors } from '../../constants/theme';
-import { Input } from '../../components/ui/Input';
 import { useAppStore } from '../../store/useAppStore';
 
 const emailSignUpSchema = z
   .object({
+    fullName: z.string().min(1, 'Please enter your full name'),
     email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
+    phone: z.string().optional(),
     password: z
       .string()
       .min(8, 'Password must be at least 8 characters')
       .regex(/[A-Z]/, 'Must include at least 1 uppercase letter')
-      .regex(/[a-z]/, 'Must include at least 1 lowercase letter')
-      .regex(/[0-9]/, 'Must include at least 1 number')
-      .regex(/[^A-Za-z0-9]/, 'Must include at least 1 special character'),
+      .regex(/[0-9]/, 'Must include at least 1 number'),
     confirmPassword: z.string().min(1, 'Please confirm your password'),
+    agreedToTerms: z.literal(true, {
+      errorMap: () => ({ message: 'You must agree to the Terms of Service & Privacy Policy' }),
+    }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -49,28 +52,52 @@ function useWarmUpBrowser() {
   }, []);
 }
 
+// Sparkle rays component matching the playful brand
+function SparkleRays() {
+  return (
+    <View style={styles.raysContainer}>
+      <View style={[styles.rayLine, styles.rayTop]} />
+      <View style={[styles.rayLine, styles.rayMid]} />
+      <View style={[styles.rayLine, styles.rayBot]} />
+    </View>
+  );
+}
+
 export default function SignUpScreen() {
   useWarmUpBrowser();
   const router = useRouter();
+  const { width: windowWidth } = useWindowDimensions();
+  const contentWidth = Math.min(windowWidth, 440);
+
   const { client, setActive } = useClerk();
   const isLoaded = Boolean(client && setActive);
   const setHasCompletedOnboarding = useAppStore((s) => s.setHasCompletedOnboarding);
 
   const { startOAuthFlow: startGoogleOAuth } = useOAuth({ strategy: 'oauth_google' });
+  const { startOAuthFlow: startGithubOAuth } = useOAuth({ strategy: 'oauth_github' });
 
-  // Email form state
+  // Form State
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(true);
 
   const [errors, setErrors] = useState<{
+    fullName?: string;
     email?: string;
+    phone?: string;
     password?: string;
     confirmPassword?: string;
+    agreedToTerms?: string;
   }>({});
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isGithubLoading, setIsGithubLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -80,19 +107,19 @@ export default function SignUpScreen() {
   const handleEmailSignUp = async () => {
     setServerError(null);
 
-    // Validate inputs with Zod
     const validation = emailSignUpSchema.safeParse({
+      fullName: fullName.trim(),
       email: email.trim(),
+      phone: phone.trim(),
       password,
       confirmPassword,
+      agreedToTerms,
     });
 
     if (!validation.success) {
-      const fieldErrors: { email?: string; password?: string; confirmPassword?: string } = {};
+      const fieldErrors: Record<string, string> = {};
       for (const issue of validation.error.issues) {
-        if (issue.path[0] === 'email') fieldErrors.email = issue.message;
-        if (issue.path[0] === 'password') fieldErrors.password = issue.message;
-        if (issue.path[0] === 'confirmPassword') fieldErrors.confirmPassword = issue.message;
+        fieldErrors[String(issue.path[0])] = issue.message;
       }
       setErrors(fieldErrors);
       return;
@@ -103,9 +130,15 @@ export default function SignUpScreen() {
 
     setIsSubmitting(true);
     try {
+      const names = fullName.trim().split(' ');
+      const firstName = names[0] || 'Chef';
+      const lastName = names.slice(1).join(' ') || undefined;
+
       await client.signUp.create({
         emailAddress: email.trim(),
         password,
+        firstName,
+        lastName,
       });
 
       // Prepare email verification code
@@ -144,11 +177,36 @@ export default function SignUpScreen() {
       console.warn('Google sign-up:', err);
       setServerError(
         err?.errors?.[0]?.longMessage ||
-        err?.errors?.[0]?.message ||
-        'Google sign-up was cancelled or encountered an issue.'
+          err?.errors?.[0]?.message ||
+          'Google sign-up was cancelled or encountered an issue.'
       );
     } finally {
       setIsGoogleLoading(false);
+    }
+  };
+
+  const handleGithubSignUp = async () => {
+    try {
+      setIsGithubLoading(true);
+      setServerError(null);
+      const redirectUrl = Linking.createURL('/oauth-native-callback');
+      const { createdSessionId, setActive: setOAuthActive } = await startGithubOAuth({
+        redirectUrl,
+      });
+      if (createdSessionId && setOAuthActive) {
+        await setOAuthActive({ session: createdSessionId });
+        setHasCompletedOnboarding(true);
+        router.replace('/(tabs)/home');
+      }
+    } catch (err: any) {
+      console.warn('GitHub sign-up:', err);
+      setServerError(
+        err?.errors?.[0]?.longMessage ||
+          err?.errors?.[0]?.message ||
+          'GitHub sign-up was cancelled or encountered an issue.'
+      );
+    } finally {
+      setIsGithubLoading(false);
     }
   };
 
@@ -164,183 +222,390 @@ export default function SignUpScreen() {
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
-          {/* Centered Phone/Web Responsive Container */}
-          <View style={styles.contentContainer}>
-            {/* Top-Right Organic Pastel Sage Green Blob */}
-            <View style={styles.topRightShape} pointerEvents="none" />
-
-            {/* Centered Brand Header */}
-            <View style={styles.brandRow}>
-              <Image
-                source={require('../../../assets/images/pot-icon.png')}
-                style={styles.potLogo}
-                contentFit="contain"
-              />
-              <View style={styles.brandTextContainer}>
-                <Text style={styles.brandTitle}>
-                  <Text style={styles.brandTitleGreen}>AajKya</Text>
-                  <Text style={styles.brandTitleOrange}>Banaye</Text>
-                </Text>
-                <Text style={styles.brandTagline}>Aaj kya banega? Let's find out!</Text>
-              </View>
+          <View style={[styles.mainContainer, { maxWidth: contentWidth }]}>
+            {/* Top Navigation Row: Back Button on Left */}
+            <View style={styles.topNavRow}>
+              <Pressable
+                onPress={() => router.back()}
+                style={({ pressed }) => [styles.backBtn, pressed && styles.btnPressed]}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
+              >
+                <Ionicons name="chevron-back" size={24} color="#0B3A2C" />
+              </Pressable>
             </View>
 
-            {/* Headline Section */}
+            {/* Centered Brand Header with Sparkle Rays & Tagline */}
+            <View style={styles.brandCenterContainer}>
+              <View style={styles.brandLogoRow}>
+                <Image
+                  source={require('../../../assets/images/logo-remove.png')}
+                  style={styles.brandLogo}
+                  contentFit="contain"
+                  priority="high"
+                />
+                <SparkleRays />
+              </View>
+              <Text style={styles.brandTagline}>Aaj kya banega? Let's find out!</Text>
+            </View>
+
+            {/* Heading Section */}
             <View style={styles.headingSection}>
-              <Text style={styles.title}>Create Account</Text>
+              <Text style={styles.title}>Create Your Account</Text>
               <Text style={styles.subtitle}>
-                Join thousands of food lovers cooking better every day.
+                Join AajKyaBanaye and get personalized recipes, meal plans and more!
               </Text>
             </View>
 
             {/* Server Error Alert Banner */}
             {serverError && (
               <View style={styles.errorBanner}>
-                <Ionicons name="alert-circle" size={18} color={Colors.error.DEFAULT} />
+                <Ionicons name="alert-circle" size={18} color="#991B1B" />
                 <Text style={styles.errorBannerText}>{serverError}</Text>
               </View>
             )}
 
-            {/* Form Fields: EMAIL SIGN UP */}
-            <View style={styles.formSection}>
-              {/* Email Address Field */}
-              <Input
-                label="Email Address"
-                placeholder="you@example.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
-                }}
-                error={errors.email}
-                containerStyle={styles.inputSpacing}
-                leftIcon={<Ionicons name="mail-outline" size={19} color="#9CA3AF" />}
-              />
+            {/* Form Fields */}
+            <View style={styles.formContainer}>
+              {/* Full Name */}
+              <View style={styles.inputWrapper}>
+                <View
+                  style={[
+                    styles.inputFieldBox,
+                    errors.fullName && styles.inputFieldBoxError,
+                  ]}
+                >
+                  <Ionicons
+                    name="person-outline"
+                    size={20}
+                    color="#7A8B80"
+                    style={styles.fieldLeftIcon}
+                  />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Full Name"
+                    placeholderTextColor="#8C9890"
+                    value={fullName}
+                    onChangeText={(val) => {
+                      setFullName(val);
+                      if (errors.fullName) setErrors((e) => ({ ...e, fullName: undefined }));
+                    }}
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                  />
+                </View>
+                {errors.fullName && (
+                  <Text style={styles.fieldErrorText}>{errors.fullName}</Text>
+                )}
+              </View>
 
-              {/* Password Field */}
-              <Input
-                label="Password"
-                placeholder="Create a secure password"
-                isPassword
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
-                }}
-                error={errors.password}
-                helperText="At least 8 chars with uppercase, lowercase, number & symbol"
-                containerStyle={styles.inputSpacing}
-                leftIcon={<Ionicons name="lock-closed-outline" size={19} color="#9CA3AF" />}
-              />
+              {/* Email Address */}
+              <View style={styles.inputWrapper}>
+                <View
+                  style={[
+                    styles.inputFieldBox,
+                    errors.email && styles.inputFieldBoxError,
+                  ]}
+                >
+                  <Ionicons
+                    name="mail-outline"
+                    size={20}
+                    color="#7A8B80"
+                    style={styles.fieldLeftIcon}
+                  />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Email Address"
+                    placeholderTextColor="#8C9890"
+                    value={email}
+                    onChangeText={(val) => {
+                      setEmail(val);
+                      if (errors.email) setErrors((e) => ({ ...e, email: undefined }));
+                    }}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="email-address"
+                  />
+                </View>
+                {errors.email && (
+                  <Text style={styles.fieldErrorText}>{errors.email}</Text>
+                )}
+              </View>
 
-              {/* Confirm Password Field */}
-              <Input
-                label="Confirm Password"
-                placeholder="Re-enter your password"
-                isPassword
-                value={confirmPassword}
-                onChangeText={(text) => {
-                  setConfirmPassword(text);
-                  if (errors.confirmPassword) {
-                    setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
-                  }
-                }}
-                error={errors.confirmPassword}
-                containerStyle={{ marginBottom: 14 }}
-                leftIcon={<Ionicons name="lock-closed-outline" size={19} color="#9CA3AF" />}
-              />
+              {/* Phone Number (Optional) */}
+              <View style={styles.inputWrapper}>
+                <View
+                  style={[
+                    styles.inputFieldBox,
+                    errors.phone && styles.inputFieldBoxError,
+                  ]}
+                >
+                  <Ionicons
+                    name="call-outline"
+                    size={20}
+                    color="#7A8B80"
+                    style={styles.fieldLeftIcon}
+                  />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Phone Number (Optional)"
+                    placeholderTextColor="#8C9890"
+                    value={phone}
+                    onChangeText={(val) => {
+                      setPhone(val);
+                      if (errors.phone) setErrors((e) => ({ ...e, phone: undefined }));
+                    }}
+                    keyboardType="phone-pad"
+                  />
+                </View>
+                {errors.phone && (
+                  <Text style={styles.fieldErrorText}>{errors.phone}</Text>
+                )}
+              </View>
 
-              {/* Sign Up Primary Button */}
+              {/* Password */}
+              <View style={styles.inputWrapper}>
+                <View
+                  style={[
+                    styles.inputFieldBox,
+                    errors.password && styles.inputFieldBoxError,
+                  ]}
+                >
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={20}
+                    color="#7A8B80"
+                    style={styles.fieldLeftIcon}
+                  />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Password"
+                    placeholderTextColor="#8C9890"
+                    value={password}
+                    onChangeText={(val) => {
+                      setPassword(val);
+                      if (errors.password) setErrors((e) => ({ ...e, password: undefined }));
+                    }}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  <Pressable
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.fieldRightIconBtn}
+                    hitSlop={10}
+                  >
+                    <Ionicons
+                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={20}
+                      color="#7A8B80"
+                    />
+                  </Pressable>
+                </View>
+                {errors.password && (
+                  <Text style={styles.fieldErrorText}>{errors.password}</Text>
+                )}
+              </View>
+
+              {/* Confirm Password */}
+              <View style={styles.inputWrapper}>
+                <View
+                  style={[
+                    styles.inputFieldBox,
+                    errors.confirmPassword && styles.inputFieldBoxError,
+                  ]}
+                >
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={20}
+                    color="#7A8B80"
+                    style={styles.fieldLeftIcon}
+                  />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Confirm Password"
+                    placeholderTextColor="#8C9890"
+                    value={confirmPassword}
+                    onChangeText={(val) => {
+                      setConfirmPassword(val);
+                      if (errors.confirmPassword)
+                        setErrors((e) => ({ ...e, confirmPassword: undefined }));
+                    }}
+                    secureTextEntry={!showConfirmPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  <Pressable
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={styles.fieldRightIconBtn}
+                    hitSlop={10}
+                  >
+                    <Ionicons
+                      name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={20}
+                      color="#7A8B80"
+                    />
+                  </Pressable>
+                </View>
+                {errors.confirmPassword && (
+                  <Text style={styles.fieldErrorText}>{errors.confirmPassword}</Text>
+                )}
+              </View>
+
+              {/* Terms of Service & Privacy Policy Agreement Checkbox */}
+              <View style={styles.termsWrapper}>
+                <Pressable
+                  onPress={() => {
+                    setAgreedToTerms(!agreedToTerms);
+                    if (errors.agreedToTerms)
+                      setErrors((e) => ({ ...e, agreedToTerms: undefined }));
+                  }}
+                  style={styles.termsCheckboxGroup}
+                  hitSlop={6}
+                >
+                  <View
+                    style={[
+                      styles.checkbox,
+                      agreedToTerms && styles.checkboxActive,
+                    ]}
+                  >
+                    {agreedToTerms && <Ionicons name="checkmark" size={13} color="#FFFFFF" />}
+                  </View>
+                </Pressable>
+                <Text style={styles.termsText}>
+                  I agree to the{' '}
+                  <Text
+                    style={styles.termsLink}
+                    onPress={() => router.push('/privacy')}
+                  >
+                    Terms of Service
+                  </Text>{' '}
+                  and{' '}
+                  <Text
+                    style={styles.termsLink}
+                    onPress={() => router.push('/privacy')}
+                  >
+                    Privacy Policy
+                  </Text>
+                </Text>
+              </View>
+              {errors.agreedToTerms && (
+                <Text style={[styles.fieldErrorText, { marginBottom: 12 }]}>
+                  {errors.agreedToTerms}
+                </Text>
+              )}
+
+              {/* Create Account Main CTA Button */}
               <Pressable
                 onPress={handleEmailSignUp}
-                disabled={isSubmitting || isGoogleLoading}
+                disabled={isSubmitting}
                 style={({ pressed }) => [
-                  styles.primaryButton,
-                  pressed && styles.primaryButtonPressed,
-                  isSubmitting && styles.primaryButtonDisabled,
+                  styles.mainButton,
+                  pressed && styles.btnPressed,
+                  isSubmitting && { opacity: 0.8 },
                 ]}
-                accessibilityRole="button"
-                accessibilityLabel="Create Account"
               >
                 {isSubmitting ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
-                  <Text style={styles.primaryButtonText}>Create Account</Text>
+                  <View style={styles.btnContentRow}>
+                    <Text style={styles.mainButtonText}>Create Account</Text>
+                    <Ionicons
+                      name="arrow-forward"
+                      size={18}
+                      color="#FFFFFF"
+                      style={{ marginLeft: 6 }}
+                    />
+                  </View>
                 )}
               </Pressable>
             </View>
 
-            {/* Terms of Service & Privacy Policy Notice */}
-            <View style={styles.legalNoticeContainer}>
-              <Text style={styles.legalNoticeText}>
-                By signing up, you agree to our{' '}
-                <Text
-                  style={styles.legalLink}
-                  onPress={() => router.push('/terms')}
-                >
-                  Terms of Service
-                </Text>{' '}
-                and{' '}
-                <Text
-                  style={styles.legalLink}
-                  onPress={() => router.push('/privacy')}
-                >
-                  Privacy Policy
-                </Text>
-                .
-              </Text>
-            </View>
-
-            {/* "or" Divider */}
+            {/* Divider: "or sign up with" */}
             <View style={styles.dividerRow}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
+              <Text style={styles.dividerText}>or sign up with</Text>
               <View style={styles.dividerLine} />
             </View>
 
-            {/* Continue with Google Button */}
-            <Pressable
-              onPress={handleGoogleSignUp}
-              disabled={isSubmitting || isGoogleLoading}
-              style={({ pressed }) => [
-                styles.googleButton,
-                pressed && styles.googleButtonPressed,
-                isGoogleLoading && styles.googleButtonDisabled,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Continue with Google"
-            >
-              {isGoogleLoading ? (
-                <ActivityIndicator size="small" color="#EA4335" />
-              ) : (
-                <>
-                  <Image
-                    source={require('../../../assets/images/google-icon.png')}
-                    style={styles.googleIcon}
-                    contentFit="contain"
-                  />
-                  <Text style={styles.googleButtonText}>Continue with Google</Text>
-                </>
-              )}
-            </Pressable>
-
-            {/* Switch to Sign In */}
-            <View style={styles.footerRow}>
-              <Text style={styles.footerText}>Already have an account? </Text>
+            {/* Social OAuth Buttons */}
+            <View style={styles.socialRow}>
+              {/* Google Button */}
               <Pressable
-                onPress={() => router.push('/(auth)/sign-in')}
-                accessibilityRole="button"
-                accessibilityLabel="Sign in to your account"
-                hitSlop={8}
+                onPress={handleGoogleSignUp}
+                disabled={isGoogleLoading}
+                style={({ pressed }) => [
+                  styles.socialBtn,
+                  pressed && styles.btnPressed,
+                  isGoogleLoading && { opacity: 0.8 },
+                ]}
               >
-                <Text style={styles.footerLink}>Sign In</Text>
+                {isGoogleLoading ? (
+                  <ActivityIndicator size="small" color="#0B3A2C" />
+                ) : (
+                  <>
+                    <Image
+                      source={require('../../../assets/images/google-icon.png')}
+                      style={styles.googleIcon}
+                      contentFit="contain"
+                    />
+                    <Text style={styles.socialBtnText}>Continue with Google</Text>
+                  </>
+                )}
               </Pressable>
+
+              {/* GitHub Button */}
+              <Pressable
+                onPress={handleGithubSignUp}
+                disabled={isGithubLoading}
+                style={({ pressed }) => [
+                  styles.socialBtn,
+                  pressed && styles.btnPressed,
+                  isGithubLoading && { opacity: 0.8 },
+                ]}
+              >
+                {isGithubLoading ? (
+                  <ActivityIndicator size="small" color="#0B3A2C" />
+                ) : (
+                  <>
+                    <Ionicons name="logo-github" size={20} color="#1E293B" />
+                    <Text style={styles.socialBtnText}>Continue with GitHub</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+
+            {/* Footer Navigation Link: "Already have an account? Log In" */}
+            <View style={styles.footerRow}>
+              <Text style={styles.footerText}>
+                Already have an account?{' '}
+                <Text
+                  style={styles.footerLink}
+                  onPress={() => router.push('/(auth)/sign-in')}
+                >
+                  Log In
+                </Text>
+              </Text>
             </View>
           </View>
         </ScrollView>
+
+        {/* Decorative Bottom Botanical Leaf Sprig */}
+        <View style={styles.bottomLeaves} pointerEvents="none">
+          <Ionicons
+            name="leaf"
+            size={28}
+            color="#2F7A4D"
+            style={{ transform: [{ rotate: '35deg' }] }}
+          />
+          <Ionicons
+            name="leaf"
+            size={18}
+            color="#469363"
+            style={{ transform: [{ rotate: '-18deg' }], marginTop: -8, marginLeft: 12 }}
+          />
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -356,80 +621,101 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 36,
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-    backgroundColor: '#FFF9F0',
-  },
-  contentContainer: {
-    width: '100%',
-    maxWidth: 420,
     position: 'relative',
   },
-  topRightShape: {
-    position: 'absolute',
-    top: -30,
-    right: -25,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: '#E8EFE9',
-    opacity: 0.85,
-    zIndex: 0,
+  mainContainer: {
+    width: '100%',
+    zIndex: 2,
   },
-  brandRow: {
+  topNavRow: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
-    zIndex: 1,
+    marginBottom: 4,
   },
-  potLogo: {
-    width: 44,
-    height: 42,
-    marginRight: 10,
+  backBtn: {
+    padding: 6,
+    marginLeft: -6,
   },
-  brandTextContainer: {
+  brandCenterContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    marginTop: 2,
+    marginBottom: 10,
+  },
+  brandLogoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  brandTitle: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 22,
-    lineHeight: 26,
-    letterSpacing: -0.4,
+  brandLogo: {
+    width: 155,
+    height: 80,
   },
-  brandTitleGreen: {
-    color: '#1C4D38',
+  raysContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 6,
+    height: 28,
+    width: 18,
+    position: 'relative',
   },
-  brandTitleOrange: {
-    color: '#F4A340',
+  rayLine: {
+    position: 'absolute',
+    backgroundColor: '#F59E0B',
+    borderRadius: 2,
+  },
+  rayTop: {
+    width: 11,
+    height: 3,
+    top: 4,
+    left: 2,
+    transform: [{ rotate: '-25deg' }],
+  },
+  rayMid: {
+    width: 14,
+    height: 3,
+    top: 13,
+    left: 3,
+  },
+  rayBot: {
+    width: 11,
+    height: 3,
+    bottom: 4,
+    left: 2,
+    transform: [{ rotate: '25deg' }],
   },
   brandTagline: {
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Inter_500Medium',
     fontSize: 12,
-    color: '#77827A',
+    color: '#265945',
     marginTop: 2,
   },
   headingSection: {
-    marginBottom: 20,
-    zIndex: 1,
+    marginTop: 12,
+    marginBottom: 18,
   },
   title: {
     fontFamily: 'Poppins_700Bold',
-    fontSize: 26,
-    color: '#16281E',
-    letterSpacing: -0.4,
+    fontSize: 28,
+    color: '#0B3A2C',
+    letterSpacing: -0.6,
   },
   subtitle: {
     fontFamily: 'Inter_400Regular',
-    fontSize: 14,
-    color: '#65736A',
+    fontSize: 13.5,
+    color: '#556358',
     marginTop: 4,
     lineHeight: 20,
   },
   errorBanner: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     backgroundColor: '#FEE2E2',
     borderWidth: 1,
     borderColor: '#FCA5A5',
@@ -446,115 +732,181 @@ const styles = StyleSheet.create({
     color: '#991B1B',
     lineHeight: 18,
   },
-  formSection: {
-    marginBottom: 6,
+  formContainer: {
+    width: '100%',
   },
-  inputSpacing: {
-    marginBottom: 14,
+  inputWrapper: {
+    marginBottom: 12,
   },
-  primaryButton: {
-    backgroundColor: '#1C4D38',
-    borderRadius: 14,
-    height: 50,
+  inputFieldBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.2,
+    borderColor: '#E6E0D2',
+    borderRadius: 16,
+    height: 52,
+    paddingHorizontal: 14,
+    shadowColor: '#0B3A2C',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  inputFieldBoxError: {
+    borderColor: '#EF4444',
+  },
+  fieldLeftIcon: {
+    marginRight: 10,
+  },
+  fieldRightIconBtn: {
+    padding: 6,
+  },
+  textInput: {
+    flex: 1,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14.5,
+    color: '#16281E',
+    height: '100%',
+  },
+  fieldErrorText: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+    color: '#DC2626',
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  termsWrapper: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 4,
+    marginBottom: 18,
+    paddingHorizontal: 2,
+    gap: 10,
+  },
+  termsCheckboxGroup: {
+    paddingTop: 2,
+  },
+  checkbox: {
+    width: 19,
+    height: 19,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: '#C7D2CA',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#1C4D38',
+  },
+  checkboxActive: {
+    backgroundColor: '#0B3A2C',
+    borderColor: '#0B3A2C',
+  },
+  termsText: {
+    flex: 1,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12.5,
+    color: '#3B4D42',
+    lineHeight: 18,
+  },
+  termsLink: {
+    fontFamily: 'Inter_600SemiBold',
+    color: '#0B3A2C',
+    textDecorationLine: 'underline',
+  },
+  mainButton: {
+    width: '100%',
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#0B3A2C',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#0B3A2C',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.22,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 3,
-    marginTop: 6,
   },
-  primaryButtonPressed: {
-    backgroundColor: '#143828',
-    transform: [{ scale: 0.99 }],
+  btnContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  primaryButtonDisabled: {
-    opacity: 0.65,
-  },
-  primaryButtonText: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 15,
+  mainButtonText: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 16,
     color: '#FFFFFF',
-    letterSpacing: 0.2,
-  },
-  legalNoticeContainer: {
-    marginTop: 14,
-    paddingHorizontal: 4,
-  },
-  legalNoticeText: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 11.5,
-    color: '#758077',
-    textAlign: 'center',
-    lineHeight: 17,
-  },
-  legalLink: {
-    color: '#1C4D38',
-    fontFamily: 'Inter_600SemiBold',
-    textDecorationLine: 'underline',
+    letterSpacing: -0.2,
   },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: 20,
+    width: '100%',
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E4DFD3',
+    backgroundColor: '#E4DDD0',
   },
   dividerText: {
     fontFamily: 'Inter_400Regular',
     fontSize: 13,
-    color: '#9CA3AF',
-    paddingHorizontal: 12,
+    color: '#7C8B80',
+    marginHorizontal: 12,
   },
-  googleButton: {
+  socialRow: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  socialBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E4DFD3',
-    borderRadius: 14,
+    borderWidth: 1.2,
+    borderColor: '#E6E0D2',
+    borderRadius: 16,
     height: 50,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    gap: 8,
+    shadowColor: '#0B3A2C',
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 1,
   },
-  googleButtonPressed: {
-    backgroundColor: '#F9F8F5',
-  },
-  googleButtonDisabled: {
-    opacity: 0.65,
-  },
   googleIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 10,
+    width: 18,
+    height: 18,
   },
-  googleButtonText: {
-    fontFamily: 'Inter_500Medium',
-    fontSize: 14,
-    color: '#374151',
+  socialBtnText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 12.5,
+    color: '#22382D',
   },
   footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
+    justifyContent: 'center',
+    marginTop: 22,
   },
   footerText: {
     fontFamily: 'Inter_400Regular',
-    fontSize: 13,
-    color: '#65736A',
+    fontSize: 14,
+    color: '#556358',
   },
   footerLink: {
     fontFamily: 'Inter_600SemiBold',
-    fontSize: 13,
-    color: '#1C4D38',
+    color: '#0B3A2C',
+  },
+  bottomLeaves: {
+    position: 'absolute',
+    bottom: 12,
+    right: 18,
+    zIndex: 1,
+  },
+  btnPressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.98 }],
   },
 });
