@@ -25,7 +25,8 @@ export function useRecipes(params?: RecipeFilterParams) {
         pagination: response.pagination,
       };
     },
-    staleTime: 1000 * 60 * 5, // 5 mins cache
+    staleTime: 1000 * 60 * 15, // 15 mins fresh in memory
+    gcTime: 1000 * 60 * 60, // 1 hour persistent memory cache
   });
 }
 
@@ -52,7 +53,8 @@ export function useInfiniteRecipes(params?: Omit<RecipeFilterParams, 'page'>) {
       }
       return undefined;
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 15,
+    gcTime: 1000 * 60 * 60,
   });
 }
 
@@ -68,7 +70,8 @@ export function useRecipeDetail(id: string | undefined) {
       return response.data;
     },
     enabled: Boolean(id),
-    staleTime: 1000 * 60 * 10, // 10 mins cache
+    staleTime: 1000 * 60 * 30, // 30 mins cache
+    gcTime: 1000 * 60 * 60,
   });
 }
 

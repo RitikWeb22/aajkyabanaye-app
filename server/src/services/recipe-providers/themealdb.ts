@@ -61,6 +61,10 @@ export class TheMealDBProvider implements RecipeProvider {
     requirements: 'Free tier attribution required',
   };
 
+  // High-performance RAM cache to ensure sub-10ms response times
+  private memoryDetailCache = new Map<string, { recipe: Recipe; expiresAt: number }>();
+  private memorySearchCache = new Map<string, { result: Paged<Recipe>; expiresAt: number }>();
+
   /**
    * Helper to fetch JSON with timeout
    */
@@ -284,8 +288,14 @@ export class TheMealDBProvider implements RecipeProvider {
    * Get single recipe by external TheMealDB ID
    */
   async getById(externalId: string): Promise<Recipe | null> {
+    // 1. Instant RAM Cache check (0ms)
+    const memCached = this.memoryDetailCache.get(externalId);
+    if (memCached && memCached.expiresAt > Date.now()) {
+      return memCached.recipe;
+    }
+
     try {
-      // 1. Check MongoDB cache first if connected
+      // 2. Check MongoDB cache if connected (20ms)
       if (mongoose.connection.readyState === 1) {
         try {
           const cached = await RecipeCache.findOne({
@@ -294,14 +304,19 @@ export class TheMealDBProvider implements RecipeProvider {
           });
 
           if (cached && cached.normalized) {
-            return cached.normalized as Recipe;
+            const recipe = cached.normalized as Recipe;
+            this.memoryDetailCache.set(externalId, {
+              recipe,
+              expiresAt: Date.now() + 60 * 60 * 1000, // 1 hour RAM cache
+            });
+            return recipe;
           }
         } catch (cacheErr) {
           console.warn('RecipeCache read notice:', cacheErr);
         }
       }
 
-      // 2. Fetch from TheMealDB lookup endpoint
+      // 3. Fetch from TheMealDB lookup endpoint
       const data = await this.fetchJson<{ meals: any[] | null }>(
         `${THEMEALDB_BASE}/lookup.php?i=${encodeURIComponent(externalId)}`
       );
@@ -312,25 +327,27 @@ export class TheMealDBProvider implements RecipeProvider {
 
       const normalized = this.normalizeMeal(data.meals[0]);
 
-      // 3. Save to MongoDB cache with 24hr TTL if connected
+      // Cache in fast RAM immediately
+      this.memoryDetailCache.set(externalId, {
+        recipe: normalized,
+        expiresAt: Date.now() + 60 * 60 * 1000,
+      });
+
+      // 4. Save to MongoDB cache asynchronously without blocking response
       if (mongoose.connection.readyState === 1) {
-        try {
-          await RecipeCache.findOneAndUpdate(
-            { source: 'themealdb', externalId },
-            {
-              $set: {
-                source: 'themealdb',
-                externalId,
-                normalized,
-                fetchedAt: new Date(),
-                expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-              },
+        RecipeCache.findOneAndUpdate(
+          { source: 'themealdb', externalId },
+          {
+            $set: {
+              source: 'themealdb',
+              externalId,
+              normalized,
+              fetchedAt: new Date(),
+              expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
             },
-            { upsert: true }
-          );
-        } catch (cacheWriteErr) {
-          console.warn('RecipeCache write notice:', cacheWriteErr);
-        }
+          },
+          { upsert: true }
+        ).catch((err) => console.warn('RecipeCache write notice:', err));
       }
 
       return normalized;
@@ -346,6 +363,13 @@ export class TheMealDBProvider implements RecipeProvider {
   async search(params: SearchParams): Promise<Paged<Recipe>> {
     const page = Math.max(1, params.page || 1);
     const limit = Math.max(1, Math.min(50, params.limit || 12));
+
+    // 1. Check RAM Cache (0ms response)
+    const cacheKey = `${params.query || ''}_${params.category || ''}_${params.cuisine || ''}_${params.diet || ''}_${params.maxTime || ''}_${page}_${limit}`;
+    const cached = this.memorySearchCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.result;
+    }
 
     try {
       let rawMeals: any[] = [];
@@ -409,22 +433,18 @@ export class TheMealDBProvider implements RecipeProvider {
         });
       }
 
-      // If results came from filter.php, they only contain idMeal, strMeal, strMealThumb.
-      // Lookup top items to have full ingredients & steps
-      const fullMeals: any[] = [];
-      const mealsToProcess = rawMeals.slice(0, 30);
+      // Fast parallel resolution capped to necessary batch size
+      const targetCount = Math.min(rawMeals.length, Math.max(limit * 2, 16));
+      const mealsToProcess = rawMeals.slice(0, targetCount);
 
-      for (const meal of mealsToProcess) {
-        if (meal.strInstructions) {
-          fullMeals.push(meal);
-        } else {
-          // Quick lookup for details
-          const detail = await this.getById(meal.idMeal);
-          if (detail) {
-            fullMeals.push(detail);
-          }
-        }
-      }
+      const resolvedMeals = await Promise.all(
+        mealsToProcess.map(async (meal) => {
+          if (meal.strInstructions) return meal;
+          return await this.getById(meal.idMeal);
+        })
+      );
+
+      const fullMeals: any[] = resolvedMeals.filter(Boolean);
 
       // Normalize all
       let normalizedItems: Recipe[] = fullMeals.map((item) =>
@@ -456,13 +476,21 @@ export class TheMealDBProvider implements RecipeProvider {
       // Paginate the normalized result for this page
       const paginatedItems = normalizedItems.slice(0, limit);
 
-      return {
+      const result: Paged<Recipe> = {
         items: paginatedItems,
         total: 500,
         page,
         limit,
-        hasMore: true, // Infinite recipes enabled!
+        hasMore: true,
       };
+
+      // Store in memory cache for 20 minutes
+      this.memorySearchCache.set(cacheKey, {
+        result,
+        expiresAt: Date.now() + 20 * 60 * 1000,
+      });
+
+      return result;
     } catch (err) {
       console.error('TheMealDB search error:', err);
       return {

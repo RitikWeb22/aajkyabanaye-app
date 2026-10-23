@@ -7,9 +7,13 @@ import { Colors } from '../../constants/theme';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
-  const safeBottom = Math.max(insets.bottom, Platform.OS === 'android' ? 14 : 20);
-  const tabHeight = (Platform.OS === 'ios' ? 56 : 60) + safeBottom;
-  const tabPaddingBottom = safeBottom + (Platform.OS === 'android' ? 4 : 2);
+  // On Android devices with physical/virtual navigation bars, insets.bottom can be 0 or ~48.
+  // We enforce a solid 28dp floor (or insets.bottom + 10) so the phone navigation bar NEVER overlaps the menu.
+  const safeBottom = insets.bottom > 0
+    ? insets.bottom + (Platform.OS === 'android' ? 10 : 0)
+    : (Platform.OS === 'android' ? 28 : 20);
+  const tabHeight = (Platform.OS === 'android' ? 68 : 58) + safeBottom;
+  const tabPaddingBottom = safeBottom + (Platform.OS === 'android' ? 6 : 2);
 
   return (
     <Tabs
@@ -23,16 +27,17 @@ export default function TabLayout() {
           borderTopWidth: 1,
           height: tabHeight,
           paddingBottom: tabPaddingBottom,
-          paddingTop: 8,
+          paddingTop: 10,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -3 },
-          shadowOpacity: 0.06,
-          shadowRadius: 8,
-          elevation: 10,
+          shadowOpacity: 0.08,
+          shadowRadius: 10,
+          elevation: 12,
         },
         tabBarLabelStyle: {
           fontFamily: 'Inter_500Medium',
-          fontSize: 11,
+          fontSize: 11.5,
+          marginTop: 2,
         },
       }}
     >
