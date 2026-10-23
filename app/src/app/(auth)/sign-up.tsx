@@ -74,7 +74,6 @@ export default function SignUpScreen() {
   const setHasCompletedOnboarding = useAppStore((s) => s.setHasCompletedOnboarding);
 
   const { startOAuthFlow: startGoogleOAuth } = useOAuth({ strategy: 'oauth_google' });
-  const { startOAuthFlow: startGithubOAuth } = useOAuth({ strategy: 'oauth_github' });
 
   // Form State
   const [fullName, setFullName] = useState('');
@@ -97,7 +96,6 @@ export default function SignUpScreen() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [isGithubLoading, setIsGithubLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -185,31 +183,6 @@ export default function SignUpScreen() {
     }
   };
 
-  const handleGithubSignUp = async () => {
-    try {
-      setIsGithubLoading(true);
-      setServerError(null);
-      const redirectUrl = Linking.createURL('/oauth-native-callback');
-      const { createdSessionId, setActive: setOAuthActive } = await startGithubOAuth({
-        redirectUrl,
-      });
-      if (createdSessionId && setOAuthActive) {
-        await setOAuthActive({ session: createdSessionId });
-        setHasCompletedOnboarding(true);
-        router.replace('/(tabs)/home');
-      }
-    } catch (err: any) {
-      console.warn('GitHub sign-up:', err);
-      setServerError(
-        err?.errors?.[0]?.longMessage ||
-          err?.errors?.[0]?.message ||
-          'GitHub sign-up was cancelled or encountered an issue.'
-      );
-    } finally {
-      setIsGithubLoading(false);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
@@ -223,31 +196,41 @@ export default function SignUpScreen() {
           bounces={false}
         >
           <View style={[styles.mainContainer, { maxWidth: contentWidth }]}>
-            {/* Top Navigation Row: Back Button on Left */}
-            <View style={styles.topNavRow}>
-              <Pressable
-                onPress={() => router.back()}
-                style={({ pressed }) => [styles.backBtn, pressed && styles.btnPressed]}
-                hitSlop={12}
-                accessibilityRole="button"
-                accessibilityLabel="Go back"
-              >
-                <Ionicons name="chevron-back" size={24} color="#0B3A2C" />
-              </Pressable>
-            </View>
+            {/* Top Row: Back Button & Logo on Left, Large Food Banner-2 on Right */}
+            <View style={styles.headerRow}>
+              {/* Left Group: Back Button + Brand Logo & Tagline */}
+              <View style={styles.brandLeftGroup}>
+                <Pressable
+                  onPress={() => router.back()}
+                  style={({ pressed }) => [styles.backBtn, pressed && styles.btnPressed]}
+                  hitSlop={12}
+                  accessibilityRole="button"
+                  accessibilityLabel="Go back"
+                >
+                  <Ionicons name="chevron-back" size={24} color="#0B3A2C" />
+                </Pressable>
 
-            {/* Centered Brand Header with Sparkle Rays & Tagline */}
-            <View style={styles.brandCenterContainer}>
-              <View style={styles.brandLogoRow}>
+                <View style={styles.brandLogoRow}>
+                  <Image
+                    source={require('../../../assets/images/logo-remove.png')}
+                    style={styles.brandLogo}
+                    contentFit="contain"
+                    priority="high"
+                  />
+                  <SparkleRays />
+                </View>
+                <Text style={styles.brandTagline}>Aaj kya banega? Let's find out!</Text>
+              </View>
+
+              {/* Large Food Platter Banner-2 on Top-Right */}
+              <View style={styles.foodBannerWrapper} pointerEvents="none">
                 <Image
-                  source={require('../../../assets/images/logo-remove.png')}
-                  style={styles.brandLogo}
+                  source={require('../../../assets/images/banner-2.png')}
+                  style={styles.foodBannerImage}
                   contentFit="contain"
                   priority="high"
                 />
-                <SparkleRays />
               </View>
-              <Text style={styles.brandTagline}>Aaj kya banega? Let's find out!</Text>
             </View>
 
             {/* Heading Section */}
@@ -529,54 +512,31 @@ export default function SignUpScreen() {
               <View style={styles.dividerLine} />
             </View>
 
-            {/* Social OAuth Buttons */}
-            <View style={styles.socialRow}>
-              {/* Google Button */}
-              <Pressable
-                onPress={handleGoogleSignUp}
-                disabled={isGoogleLoading}
-                style={({ pressed }) => [
-                  styles.socialBtn,
-                  pressed && styles.btnPressed,
-                  isGoogleLoading && { opacity: 0.8 },
-                ]}
-              >
-                {isGoogleLoading ? (
-                  <ActivityIndicator size="small" color="#0B3A2C" />
-                ) : (
-                  <>
-                    <Image
-                      source={require('../../../assets/images/google-icon.png')}
-                      style={styles.googleIcon}
-                      contentFit="contain"
-                    />
-                    <Text style={styles.socialBtnText}>Continue with Google</Text>
-                  </>
-                )}
-              </Pressable>
+            {/* Full Width Google OAuth Button (GitHub removed) */}
+            <Pressable
+              onPress={handleGoogleSignUp}
+              disabled={isGoogleLoading}
+              style={({ pressed }) => [
+                styles.googleFullBtn,
+                pressed && styles.btnPressed,
+                isGoogleLoading && { opacity: 0.8 },
+              ]}
+            >
+              {isGoogleLoading ? (
+                <ActivityIndicator size="small" color="#0B3A2C" />
+              ) : (
+                <>
+                  <Image
+                    source={require('../../../assets/images/google-icon.png')}
+                    style={styles.googleIcon}
+                    contentFit="contain"
+                  />
+                  <Text style={styles.googleBtnText}>Continue with Google</Text>
+                </>
+              )}
+            </Pressable>
 
-              {/* GitHub Button */}
-              <Pressable
-                onPress={handleGithubSignUp}
-                disabled={isGithubLoading}
-                style={({ pressed }) => [
-                  styles.socialBtn,
-                  pressed && styles.btnPressed,
-                  isGithubLoading && { opacity: 0.8 },
-                ]}
-              >
-                {isGithubLoading ? (
-                  <ActivityIndicator size="small" color="#0B3A2C" />
-                ) : (
-                  <>
-                    <Ionicons name="logo-github" size={20} color="#1E293B" />
-                    <Text style={styles.socialBtnText}>Continue with GitHub</Text>
-                  </>
-                )}
-              </Pressable>
-            </View>
-
-            {/* Footer Navigation Link: "Already have an account? Log In" */}
+            {/* Footer Navigation Link */}
             <View style={styles.footerRow}>
               <Text style={styles.footerText}>
                 Already have an account?{' '}
@@ -631,27 +591,27 @@ const styles = StyleSheet.create({
     width: '100%',
     zIndex: 2,
   },
-  topNavRow: {
-    width: '100%',
+  headerRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    width: '100%',
+    minHeight: 140,
+    position: 'relative',
+    marginBottom: 6,
+  },
+  brandLeftGroup: {
+    alignItems: 'flex-start',
+    zIndex: 2,
   },
   backBtn: {
     padding: 6,
     marginLeft: -6,
-  },
-  brandCenterContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    marginTop: 2,
-    marginBottom: 10,
+    marginBottom: 2,
   },
   brandLogoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
   },
   brandLogo: {
     width: 155,
@@ -695,6 +655,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#265945',
     marginTop: 2,
+  },
+  foodBannerWrapper: {
+    position: 'absolute',
+    top: -12,
+    right: -24,
+    width: 215,
+    height: 155,
+    zIndex: 1,
+  },
+  foodBannerImage: {
+    width: '100%',
+    height: '100%',
   },
   headingSection: {
     marginTop: 12,
@@ -854,13 +826,8 @@ const styles = StyleSheet.create({
     color: '#7C8B80',
     marginHorizontal: 12,
   },
-  socialRow: {
-    flexDirection: 'row',
-    gap: 12,
+  googleFullBtn: {
     width: '100%',
-  },
-  socialBtn: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -868,21 +835,21 @@ const styles = StyleSheet.create({
     borderWidth: 1.2,
     borderColor: '#E6E0D2',
     borderRadius: 16,
-    height: 50,
-    gap: 8,
+    height: 52,
+    gap: 10,
     shadowColor: '#0B3A2C',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
     elevation: 1,
   },
   googleIcon: {
-    width: 18,
-    height: 18,
+    width: 20,
+    height: 20,
   },
-  socialBtnText: {
+  googleBtnText: {
     fontFamily: 'Inter_600SemiBold',
-    fontSize: 12.5,
+    fontSize: 14.5,
     color: '#22382D',
   },
   footerRow: {
